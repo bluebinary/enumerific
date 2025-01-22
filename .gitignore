@@ -1,0 +1,10 @@
+# Compiled Python Bytecode
+*.pyc
+
+# Build Artifacts
+build/**
+.pytest_cache/**
+
+# Environment Files
+.env
+!.env.*
