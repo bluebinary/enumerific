@@ -4,11 +4,15 @@ The `enumerific` library provides several useful extensions to the Python built-
 
 ### Requirements
 
-The Enumerific library has been tested with Python 3.9, 3.10, 3.11, 3.12 and 3.13 but may work with some earlier versions such as 3.8, but has not been tested against this version or any earlier. The library is not compatible with Python 2.* or earlier.
+The Enumerific library has been tested with Python 3.10, 3.11, 3.12 and 3.13, and is not
+compatible with Python 3.9 or earlier.
 
 ### Installation
 
-The Enumerific library is available from PyPi, so may be added to a project's dependencies via its `requirements.txt` file or similar by referencing the Enumerific library's name, `enumerific`, or the library may be installed directly into your local runtime environment using `pip install` by entering the following command, and following any prompts:
+Enumerific is available from the PyPI, so may be added to a project's dependencies via
+its `requirements.txt` file or similar by referencing the library's name, `enumerific`,
+or the library may be installed directly into your local runtime environment using `pip`
+by entering the following command, and following any prompts:
 
 	$ pip install enumerific
 
@@ -16,10 +20,23 @@ The Enumerific library is available from PyPi, so may be added to a project's de
 
 To use the Enumerific library, simply import the library and use it like you would the built-in `enum` library as a drop-in replacement:
 
-```
-import enumerific
+```python
+from enumerific import Enumeration as Enum
 
-class MyEnum(enumerific.Enum):
+class MyEnum(Enum):
+  Option1 = "ABC"
+  Option2 = "DEF"
+
+val = MyEnum.Option1
+```
+
+Alternatively, to make use of the extra functionality for the standard library's `Enum`
+class, import the `Enum` class from the Enumerific library:
+
+```python
+from enumerific import Enum
+
+class MyEnum(Enum):
   Option1 = "ABC"
   Option2 = "DEF"
 
@@ -28,12 +45,11 @@ val = MyEnum.Option1
 
 You can also import the `Enum` class directly from the `enumerific` library and use it directly:
 
-```
+```python
 from enumerific import Enum
 
 class MyEnum(Enum):
   Option1 = "ABC"
-  ...
 ```
 
 The Enumerific library's own `Enum` class is a subclass of the built-in `enum.Enum` class, so all of the built-in functionality of `enum.Enum` is available, as well as several additional class methods:
@@ -46,7 +62,7 @@ The benefits of being able to validate and reconcile various input values agains
 
 Some examples of use include the following code samples, where each make use of the example `MyEnum` class, defined as follows:
 
-```
+```python
 from enumerific import Enum
 
 class MyEnum(Enum):
@@ -56,7 +72,13 @@ class MyEnum(Enum):
 
 #### Example 1: Reconciling a Value
 
-```
+```python
+from enumerific import Enum
+
+class MyEnum(Enum):
+  Option1 = "ABC"
+  Option2 = "DEF"
+
 # Given a string value in this case
 value = "ABC"
 
@@ -69,7 +91,13 @@ assert value is MyEnum.Option1  # asserts successfully as enums are singletons
 
 #### Example 2: Reconciling an Enumeration Option Name
 
-```
+```python
+from enumerific import Enum
+
+class MyEnum(Enum):
+  Option1 = "ABC"
+  Option2 = "DEF"
+
 # Given a string value in this case
 value = "Option1"
 
@@ -82,7 +110,13 @@ assert value is MyEnum.Option1  # asserts successfully as enums are singletons
 
 #### Example 3: Validating a Value
 
-```
+```python
+from enumerific import Enum
+
+class MyEnum(Enum):
+  Option1 = "ABC"
+  Option2 = "DEF"
+
 # The value can be an enumeration option's name, its value, or the enumeration option
 value = "Option1"
 value = "ABC"
@@ -90,13 +124,21 @@ value = MyEnum.Option1
 
 if MyEnum.validate(value) is True:
     # do something if the value could be validated
+    pass
 else:
     # do something else if the value could not be validated
+    pass
 ```
 
 #### Example 4: Iterating Over Enumeration Options
 
-```
+```python
+from enumerific import Enum
+
+class MyEnum(Enum):
+  Option1 = "ABC"
+  Option2 = "DEF"
+
 for option in MyEnum.options():
     # do something with each option
     print(option.name, option.value)
@@ -108,14 +150,14 @@ The Enumerific library includes a suite of comprehensive unit tests which ensure
 
 To ensure that the unit tests are run within a predictable runtime environment where all of the necessary dependencies are available, a [Docker](https://www.docker.com) image is created within which the tests are run. To run the unit tests, ensure Docker and Docker Compose is [installed](https://docs.docker.com/engine/install/), and perform the following commands, which will build the Docker image via `docker compose build` and then run the tests via `docker compose run` – the output of running the tests will be displayed:
 
-```
+```shell
 $ docker compose build
 $ docker compose run tests
 ```
 
 To run the unit tests with optional command line arguments being passed to `pytest`, append the relevant arguments to the `docker compose run tests` command, as follows, for example passing `-vv` to enable verbose output:
 
-```
+```shell
 $ docker compose run tests -vv
 ```
 

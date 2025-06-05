@@ -1,4 +1,5 @@
 x-volumes: &volumes
+  - ./README.md:/README.md
   - ./source/enumerific:/source/enumerific
   - ./source/enumerific:/usr/local/lib/python/site-packages/enumerific
   - ./tests:/tests
