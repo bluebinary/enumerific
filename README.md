@@ -21,7 +21,7 @@ by entering the following command, and following any prompts:
 To use the Enumerific library, simply import the library and use it like you would the built-in `enum` library as a drop-in replacement:
 
 ```python
-from enumerific import Enumeration as Enum
+from enumerific import Enum
 
 class MyEnum(Enum):
   Option1 = "ABC"
