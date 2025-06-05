@@ -1,25 +1,28 @@
+x-volumes: &volumes
+  - ./source/enumerific:/source/enumerific
+  - ./source/enumerific:/usr/local/lib/python/site-packages/enumerific
+  - ./tests:/tests
+
 services:
 
   black:
+    container_name: enumerific-black
     build:
       dockerfile: ./Dockerfile
       context: ./
+    image: enumerific-black
     environment:
       - SERVICE=black
-    command: black --check /source /tests
     volumes:
-      - ./source/enumerific:/source/enumerific
-      - ./source/enumerific:/usr/local/lib/python3.11/site-packages/enumerific
-      - ./tests:/tests
+      *volumes
 
   tests:
+    container_name: enumerific-tests
     build:
       dockerfile: ./Dockerfile
       context: ./
+    image: enumerific-tests
     environment:
       - SERVICE=tests
-    command: pytest /tests
     volumes:
-      - ./source/enumerific:/source/enumerific
-      - ./source/enumerific:/usr/local/lib/python3.11/site-packages/enumerific
-      - ./tests:/tests
+      *volumes

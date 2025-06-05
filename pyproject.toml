@@ -4,24 +4,27 @@ description = "Simplifies working with Python enums."
 readme = {file = "README.md", content-type = "text/markdown"}
 keywords = ["enum", "enumeration", "enumerations"]
 authors = [{name = "Daniel Sissman"}]
-license = {file = "LICENSE.md", content-type = "text/markdown"}
+license = "MIT"
 classifiers = [
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
-requires-python = ">=3.9"
-dynamic = ["version"]
+requires-python = ">=3.10"
+dynamic = [
+  "version",
+  "dependencies",
+  "optional-dependencies",
+]
 
 [project.urls]
-Documentation = "https://github.com/bluebinary/enumerific/blob/main/README.md"
-Changelog = "https://github.com/bluebinary/enumerific/blob/main/CHANGELOG.md"
-Repository = "https://github.com/bluebinary/enumerific"
-Issues = "https://github.com/bluebinary/enumerific/issues"
+documentation = "https://github.com/bluebinary/enumerific/blob/main/README.md"
+changelog = "https://github.com/bluebinary/enumerific/blob/main/CHANGELOG.md"
+repository = "https://github.com/bluebinary/enumerific"
+issues = "https://github.com/bluebinary/enumerific/issues"
+homepage = "https://github.com/bluebinary/enumerific"
 
 [build-system]
 requires = ["setuptools", "wheel"]
@@ -29,6 +32,11 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
 version = {file = "source/enumerific/version.txt"}
+dependencies = {file = "requirements.txt"}
+
+[tool.setuptools.dynamic.optional-dependencies]
+development = {file = "requirements.development.txt"}
+distribution = {file = "requirements.distribution.txt"}
 
 [tool.setuptools]
 zip-safe = true
