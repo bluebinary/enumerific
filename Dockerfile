@@ -1,47 +1,79 @@
 # syntax = docker/dockerfile:1.4.0
 
-FROM python:3.11
+################################# [Base Python Image] ##################################
+
+# Allow the Python version to be specified as a build argument, with a preferred default
+ARG VERSION=3.12
+
+FROM python:${VERSION} AS base
+
+# Create a symlink between the installed Python version path and a versionless path to
+# ease long-term maintenance that simply requires the symlink to be generated when the
+# Python version is modified, rather than a whole range of absolute paths. Many Python
+# installations create a versionless path symlink by default; Docker's doesn't seem to.
+RUN <<ENDRUN
+	# Use 'awk' and 'cut' to extract the major.minor version from `python --version` as
+	# the major.minor, but not micro, version parts are used in the installation path:
+	VERSION=$(python --version 2>&1 | awk '{print $2}' | cut -d'.' -f1,2)
+	echo "Creating a symlink from the versioned installation path to a generic path:"
+	ln -s -v "/usr/local/lib/python${VERSION}" "/usr/local/lib/python"
+ENDRUN
 
 # Ensure pip has been upgraded to the latest version before installing dependencies
 RUN pip install --upgrade pip
 
+############################# [Development Python Image] ###############################
+
+FROM base AS development
+
 # Copy and install the dependencies from requirements.txt
 COPY requirements.txt /app/requirements.txt
-RUN pip install -r /app/requirements.txt
+RUN pip install --requirement /app/requirements.txt
 
-# Copy the tests into the container
-COPY ./tests /tests
+# Copy and install the dependencies from requirements.development.txt
+COPY requirements.development.txt /app/requirements.development.txt
+RUN pip install --requirement /app/requirements.development.txt
+
+# Copy and install the dependencies from requirements.distribution.txt
+# COPY requirements.distribution.txt /app/requirements.distribution.txt
+# RUN pip install --requirement /app/requirements.distribution.txt
 
 # Copy the library source into the container's source folder for black lint checking
 COPY ./source/enumerific /source/enumerific
 
+# Copy the README file into the container
+COPY ./README.md /README.md
+
+# Copy the tests into the container
+COPY ./tests /tests
+
 # Copy the library source into the container's site-packages folder for running unit tests
-COPY ./source/enumerific /usr/local/lib/python3.11/site-packages/enumerific
+COPY ./source/enumerific /usr/local/lib/python/site-packages/enumerific
 
 # Create a custom entry point that allows us to override the command as needed
-COPY <<"EOF" /entrypoint.sh
+COPY <<"COPYEOF" /entrypoint.sh
 #!/bin/bash
 
 ARGS=( "$@" );
 
 echo -e "entrypoint.sh called with arguments: ${ARGS[@]}";
 
-if [[ "${ARGS[0]}" == "black" ]]; then
-	echo -e "black ${ARGS[@]:1}";
-	black ${ARGS[@]:1};
-elif [[ "${ARGS[0]}" == "pytest" ]]; then
-	echo -e "pytest /tests ${ARGS[@]:1}";
-	pytest /tests ${ARGS[@]:1};
-elif [[ "${SERVICE}" == "black" ]]; then
-	echo -e "black ${ARGS[@]}";
-	black ${ARGS[@]};
+if [[ "${SERVICE}" == "black" ]]; then
+	if [[ "${ARGS[0]}" == "--reformat" ]]; then
+		echo -e "black --verbose ${ARGS[@]:1} /source /tests";
+		black --verbose ${ARGS[@]:1} /source /tests;
+	else
+		echo -e "black --check ${ARGS[@]:1} /source /tests";
+		black --check ${ARGS[@]:1} /source /tests;
+	fi
 elif [[ "${SERVICE}" == "tests" ]]; then
 	echo -e "pytest /tests ${ARGS[@]}";
 	pytest /tests ${ARGS[@]};
+	pytest --verbose --codeblocks /README.md;
 else
 	echo -e "No valid command was specified nor defined in the `SERVICE` environment!";
 fi
-EOF
+COPYEOF
 
 RUN chmod +x /entrypoint.sh
 
