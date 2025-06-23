@@ -17,6 +17,7 @@ from enumerific import (
     EnumerationDictionary,
     EnumerationFlag,
     auto,
+    anno,
 )
 
 
@@ -86,7 +87,7 @@ def test_extensible_enumeration():
     except enumerific.exceptions.EnumerationError as exception:
         assert (
             str(exception)
-            == "The 'Colors' enumeration class, has no 'GRAY' enumeration option!"
+            == "The 'Colors' enumeration class, has no 'GRAY' enumeration option nor annotation property!"
         )
 
     # Test .__contains__() for the "RED" option
@@ -117,7 +118,7 @@ def test_extensible_enumeration():
     except enumerific.exceptions.EnumerationError as exception:
         assert (
             str(exception)
-            == "The 'Colors' enumeration class, has no 'GRAY' enumeration option!"
+            == "The 'Colors' enumeration class, has no 'GRAY' enumeration option nor annotation property!"
         )
 
     # Test types, names and values for the RED option
@@ -265,7 +266,7 @@ def test_extensible_enumeration_integer():
     except enumerific.exceptions.EnumerationError as exception:
         assert (
             str(exception)
-            == "The 'TestEnumInteger' enumeration class, has no 'MAYBE' enumeration option!"
+            == "The 'TestEnumInteger' enumeration class, has no 'MAYBE' enumeration option nor annotation property!"
         )
 
     # Test .__contains__() for the "NO" option
@@ -290,7 +291,7 @@ def test_extensible_enumeration_integer():
     except enumerific.exceptions.EnumerationError as exception:
         assert (
             str(exception)
-            == "The 'TestEnumInteger' enumeration class, has no 'MAYBE' enumeration option!"
+            == "The 'TestEnumInteger' enumeration class, has no 'MAYBE' enumeration option nor annotation property!"
         )
 
     # Test types and values for the YES option
@@ -843,6 +844,246 @@ def test_extensible_enum_subclassing_disabled_exception():
         )
 
 
+def test_anno_type():
+    """Test the anno() annotated value type ensuring that it holds and returns the value
+    assigned to it, and that it can store optional annotation key-value pairs."""
+
+    # Create an automatically generated sequence number; if this is the first call since
+    # auto.configure() was called, expect the value to match the configured start value;
+    # additionally, specify some annotations on the automatically generated sequence:
+    value = anno(value=456, notes="these are some notes", another=123)
+
+    # Expect that the value is an instance of the anno class
+    assert isinstance(value, anno)
+
+    # Expect that the value can be unwraped from the annotation
+    assert value.unwrap() == 456
+
+    # Expect that the assigned "notes" annotation exists and has the value we expect
+    assert hasattr(value, "notes")
+    assert "notes" in value
+    assert isinstance(value.notes, str)
+    assert value.notes == "these are some notes"
+    assert value["notes"] == "these are some notes"
+    assert value.get("notes") == "these are some notes"
+
+    # Expect that the assigned "another" annotation exists and has the value we expect
+    assert hasattr(value, "another")
+    assert "another" in value
+    assert isinstance(value.another, int)
+    assert value.another == 123
+    assert value["another"] == 123
+    assert value.get("another") == 123
+
+    # Expect that the unassigned "something" annotation does not exist
+    assert not hasattr(value, "something")
+    assert not "something" in value
+
+    # Expect an AttributeError if we try to access an attribute that does not exist
+    with pytest.raises(AttributeError):
+        assert value.something == 123
+
+    # Expect an AttributeError if we try to access an attribute that does not exist
+    with pytest.raises(AttributeError):
+        assert isinstance(value.something, None)
+
+    # Expect an KeyError if we try to access an attribute that does not exist as an item
+    with pytest.raises(KeyError):
+        assert value["something"] == 123
+
+    # We can use the .get() method to handle cases where some enumeration options may
+    # have an annotation and others may not; .get() does not raise any exceptions if the
+    # specified annotation does not exist; it just returns None by default, but another
+    # default value can be specified instead of None when an annotation does not exist:
+    assert value.get("something", default=123) == 123
+
+
+def test_auto_type():
+    """Test the auto() number sequence generator ensuring that it generates values of
+    the expected class type, int."""
+
+    # Configure the auto class with the relevant sequence generation options
+    auto.configure(start=1, steps=1)
+
+    # Create an automatically generated sequence number; if this is the first call since
+    # auto.configure() was called, expect the value to match the configured start value:
+    value = auto()
+
+    # Expect that the value is an instance of the auto class
+    assert isinstance(value, auto)
+
+    # Expect that the value is an instance of the anno class, which auto subclasses
+    assert isinstance(value, anno)
+
+    # Expect that the value is an instance of the int class, which auto subclasses
+    assert isinstance(value, int)
+
+    # Expect that the value from the first call to auto() matches the configured start
+    assert value == 1
+
+
+def test_auto_type():
+    """Test the auto() number sequence generator ensuring that it generates values of
+    the expected class type, int, and that it can store optional annotations."""
+
+    # Configure the auto class with the relevant sequence generation options
+    auto.configure(start=1, steps=1)
+
+    # Create an automatically generated sequence number; if this is the first call since
+    # auto.configure() was called, expect the value to match the configured start value;
+    # additionally, specify some annotations on the automatically generated sequence:
+    value = auto(notes="these are some notes", another=123)
+
+    # Expect that the value is an instance of the auto class
+    assert isinstance(value, auto)
+
+    # Expect that the value is an instance of the anno class, which auto subclasses
+    assert isinstance(value, anno)
+
+    # Expect that the value is an instance of the int class, which auto subclasses
+    assert isinstance(value, int)
+
+    # Expect that the value from the first call to auto() matches the configured start
+    assert value == 1
+
+    # Expect that the assigned "notes" annotation exists and has the value we expect
+    assert hasattr(value, "notes")
+    assert "notes" in value
+    assert isinstance(value.notes, str)
+    assert value.notes == "these are some notes"
+    assert value["notes"] == "these are some notes"
+    assert value.get("notes") == "these are some notes"
+
+    # Expect that the assigned "another" annotation exists and has the value we expect
+    assert hasattr(value, "another")
+    assert "another" in value
+    assert isinstance(value.another, int)
+    assert value.another == 123
+    assert value["another"] == 123
+    assert value.get("another") == 123
+
+    # Expect that the unassigned "something" annotation does not exist
+    assert not hasattr(value, "something")
+    assert not "something" in value
+
+    # Expect an AttributeError if we try to access an attribute that does not exist
+    with pytest.raises(AttributeError):
+        assert value.something == 123
+
+    # Expect an AttributeError if we try to access an attribute that does not exist
+    with pytest.raises(AttributeError):
+        assert isinstance(value.something, None)
+
+    # Expect an KeyError if we try to access an attribute that does not exist as an item
+    with pytest.raises(KeyError):
+        assert value["something"] == 123
+
+    # We can use the .get() method to handle cases where some enumeration options may
+    # have an annotation and others may not; .get() does not raise any exceptions if the
+    # specified annotation does not exist; it just returns None by default, but another
+    # default value can be specified instead of None when an annotation does not exist:
+    assert value.get("something", default=123) == 123
+
+
+def test_auto_start_one_step_one():
+    """Test the auto() number sequence generator; starting at one, and stepped by one on
+    each call resulting in a contiguous sequence of numbers of the required length."""
+
+    # Configure the auto class with the relevant sequence generation options
+    auto.configure(start=1, steps=1)
+
+    assert auto() == 1
+    assert auto() == 2
+    assert auto() == 3
+    assert auto() == 4
+    assert auto() == 5
+
+
+def test_auto_start_zero_step_one():
+    """Test the auto() number sequence generator; starting at zero and stepped by one on
+    each call resulting in a contiguous sequence of numbers of the required length."""
+
+    # Configure the auto class with the relevant sequence generation options
+    auto.configure(start=0, steps=1)
+
+    assert auto() == 0
+    assert auto() == 1
+    assert auto() == 2
+    assert auto() == 3
+    assert auto() == 4
+    assert auto() == 5
+
+
+def test_auto_start_zero_step_two():
+    """Test the auto() number sequence generator; starting at zero and stepped by two on
+    each call resulting in a contiguous sequence of numbers of the required length."""
+
+    # Configure the auto class with the relevant sequence generation options
+    auto.configure(start=0, steps=2)
+
+    assert auto() == 0
+    assert auto() == 2
+    assert auto() == 4
+    assert auto() == 6
+    assert auto() == 8
+
+
+def test_auto_start_one_step_three():
+    """Test the auto() number sequence generator; starting at zero, stepped by one, with
+    the number multipled (times) by three on each call; note that if times is specified
+    it takes precedence over the power keyword argument; they cannot be combined."""
+
+    # Configure the auto class with the relevant sequence generation options
+    auto.configure(start=0, steps=1, times=3)
+
+    assert auto() == 0
+    assert auto() == 3
+    assert auto() == 6
+    assert auto() == 9
+    assert auto() == 12
+    assert auto() == 15
+    assert auto() == 18
+
+
+def test_auto_start_one_step_one_power_of_two():
+    """Test the auto() number sequence generator; starting at one, stepped by one, with
+    the numbers raised to the power of two to generate sequences which are needed for
+    bitwise flag enumerations to ensure that no two enumeration options overlap in their
+    bitwise representations, which allows multiple flags to be combined but to still be
+    uniquely identified and determined from the whole; auto() also accepts a 'flags'
+    keyword argument that defaults to raising the numbers to the power of two."""
+
+    # Configure the auto class with the relevant sequence generation options
+    auto.configure(start=1, steps=1, power=2)
+
+    assert auto() == 1
+    assert auto() == 2
+    assert auto() == 4
+    assert auto() == 8
+    assert auto() == 16
+
+
+def test_auto_start_one_step_one_flag_mode():
+    """Test the auto() number sequence generator; starting at 1, in flag mode which by
+    default generates number sequences to the power of two which are needed for bitwise
+    flag enumerations to ensure that no two enumeration options overlap in their bitwise
+    representations, which allows multiple flags to be combined but to still be uniquely
+    identified and determined from the whole."""
+
+    # Configure the auto class with the relevant sequence generation options
+    auto.configure(start=1, steps=1, flags=True)
+
+    assert auto() == 1
+    assert auto() == 2
+    assert auto() == 4
+    assert auto() == 8
+    assert auto() == 16
+    assert auto() == 32
+    assert auto() == 64
+    assert auto() == 128
+    assert auto() == 256
+
+
 def test_auto_value_assignment():
     """Test the use of the automatic enumeration value assignment using auto()"""
 
@@ -993,8 +1234,7 @@ def test_auto_value_assignment_and_subclass_when_auto_starts_at_the_next_value()
     """Test the use of the automatic enumeration value assignment using auto()"""
 
     class Colors(Enumeration):
-        """Create a permissions enumeration based on the EnumerationFlag class, here
-        indicated by the subclassing of the EnumerationFlag class."""
+        """Create a test Colors enumeration based on the Enumeration class."""
 
         RED = auto()
         ORANGE = auto()
@@ -1057,3 +1297,172 @@ def test_auto_value_assignment_and_subclass_when_auto_starts_at_the_next_value()
     assert MetallicColors.GOLD == 7
     assert MetallicColors.SILVER == 8
     assert MetallicColors.COPPER == 9
+
+
+def test_enumeration_annotations():
+    """Test the annotation of an enumeration option with manually assigned auto values"""
+
+    class Colors(Enumeration):
+        """Create a test Color enumeration based on the Enumeration class."""
+
+        RED = anno(auto(), rgb=(255, 0, 0), primary=True)
+        GREEN = anno(auto(), rgb=(0, 255, 0), primary=True)
+        BLUE = anno(auto(), rgb=(0, 0, 255), primary=True)
+        PURPLE = anno(auto(), rgb=(255, 0, 255), primary=False)
+
+    assert issubclass(Colors, Enumeration)
+    assert issubclass(Colors, EnumerationInteger)
+
+    assert isinstance(Colors.RED, Colors)
+    assert isinstance(Colors.GREEN, Colors)
+    assert isinstance(Colors.BLUE, Colors)
+    assert isinstance(Colors.PURPLE, Colors)
+
+    assert Colors.RED == 1
+    assert Colors.GREEN == 2
+    assert Colors.BLUE == 3
+    assert Colors.PURPLE == 4
+
+    assert Colors.RED.rgb == (255, 0, 0)
+    assert Colors.RED.primary is True
+    assert Colors.GREEN.rgb == (0, 255, 0)
+    assert Colors.GREEN.primary is True
+    assert Colors.BLUE.rgb == (0, 0, 255)
+    assert Colors.BLUE.primary is True
+    assert Colors.PURPLE.rgb == (255, 0, 255)
+    assert Colors.PURPLE.primary is False
+
+
+def test_enumeration_annotations_with_automatic_value():
+    """Test the annotation of an enumeration option with automatically assigned auto values"""
+
+    class Colors(Enumeration):
+        """Create a test Color enumeration based on the Enumeration class."""
+
+        # Using annoauto() combines auto() and anno() to assign an automatic value and any annotations
+        RED = auto(rgb=(255, 0, 0), primary=True)
+        GREEN = auto(rgb=(0, 255, 0), primary=True)
+        BLUE = auto(rgb=(0, 0, 255), primary=True)
+        PURPLE = auto(rgb=(255, 0, 255), primary=False)
+
+    assert issubclass(Colors, Enumeration)
+    assert issubclass(Colors, EnumerationInteger)
+
+    assert isinstance(Colors.RED, Colors)
+    assert isinstance(Colors.GREEN, Colors)
+    assert isinstance(Colors.BLUE, Colors)
+    assert isinstance(Colors.PURPLE, Colors)
+
+    assert Colors.RED == 1
+    assert Colors.GREEN == 2
+    assert Colors.BLUE == 3
+    assert Colors.PURPLE == 4
+
+    assert Colors.RED.rgb == (255, 0, 0)
+    assert Colors.RED.primary is True
+    assert Colors.GREEN.rgb == (0, 255, 0)
+    assert Colors.GREEN.primary is True
+    assert Colors.BLUE.rgb == (0, 0, 255)
+    assert Colors.BLUE.primary is True
+    assert Colors.PURPLE.rgb == (255, 0, 255)
+    assert Colors.PURPLE.primary is False
+
+
+def test_membership_in_list():
+    """Test membership determination of an enumeration in a list"""
+
+    class Colors(Enumeration):
+        """Create a test Color enumeration based on the Enumeration class."""
+
+        RED = auto()
+        ORANGE = auto()
+        YELLOW = auto()
+        GREEN = auto()
+        BLUE = auto()
+        VIOLET = auto()
+
+    assert issubclass(Colors, Enumeration)
+    assert issubclass(Colors, EnumerationInteger)
+
+    colors: list[Colors] = [
+        Colors.RED,
+        Colors.YELLOW,
+    ]
+
+    assert isinstance(colors, list)
+    assert len(colors) == 2
+
+    assert Colors.RED in colors
+    assert Colors.ORANGE not in colors
+    assert Colors.YELLOW in colors
+    assert Colors.GREEN not in colors
+    assert Colors.BLUE not in colors
+    assert Colors.VIOLET not in colors
+
+
+def test_membership_in_set():
+    """Test membership determination of an enumeration in a set"""
+
+    class Colors(Enumeration):
+        """Create a test Color enumeration based on the Enumeration class."""
+
+        RED = auto()
+        ORANGE = auto()
+        YELLOW = auto()
+        GREEN = auto()
+        BLUE = auto()
+        VIOLET = auto()
+
+    assert issubclass(Colors, Enumeration)
+    assert issubclass(Colors, EnumerationInteger)
+
+    colors: set[Colors] = set(
+        [
+            Colors.RED,
+            Colors.YELLOW,
+        ]
+    )
+
+    assert isinstance(colors, set)
+    assert len(colors) == 2
+
+    assert Colors.RED in colors
+    assert Colors.ORANGE not in colors
+    assert Colors.YELLOW in colors
+    assert Colors.GREEN not in colors
+    assert Colors.BLUE not in colors
+    assert Colors.VIOLET not in colors
+
+
+def test_membership_in_tuple():
+    """Test membership determination of an enumeration in a tuple"""
+
+    class Colors(Enumeration):
+        """Create a test Color enumeration based on the Enumeration class."""
+
+        RED = auto()
+        ORANGE = auto()
+        YELLOW = auto()
+        GREEN = auto()
+        BLUE = auto()
+        VIOLET = auto()
+
+    assert issubclass(Colors, Enumeration)
+    assert issubclass(Colors, EnumerationInteger)
+
+    colors: tuple[Colors] = tuple(
+        [
+            Colors.RED,
+            Colors.YELLOW,
+        ]
+    )
+
+    assert isinstance(colors, tuple)
+    assert len(colors) == 2
+
+    assert Colors.RED in colors
+    assert Colors.ORANGE not in colors
+    assert Colors.YELLOW in colors
+    assert Colors.GREEN not in colors
+    assert Colors.BLUE not in colors
+    assert Colors.VIOLET not in colors

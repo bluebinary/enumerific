@@ -18,6 +18,7 @@ from .extensible import (
     EnumerationDictionary,
     EnumerationFlag,
     auto,
+    anno,
 )
 
 from .standard import Enum
