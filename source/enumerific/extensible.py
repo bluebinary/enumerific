@@ -203,6 +203,8 @@ class EnumerationConfiguration(object):
     _raises: bool = None
     _flags: bool = None
     _start: int = None
+    _steps: int = None
+    _times: int = None
     _typecast: bool = None
 
     def __init__(
@@ -215,6 +217,8 @@ class EnumerationConfiguration(object):
         raises: bool = None,
         flags: bool = None,
         start: int = None,
+        steps: int = None,
+        times: int = None,
         typecast: bool = None,
     ):
         self.unique = unique
@@ -225,6 +229,8 @@ class EnumerationConfiguration(object):
         self.raises = raises
         self.flags = flags
         self.start = start
+        self.steps = steps
+        self.times = times
         self.typecast = typecast
 
     def __dir__(self) -> list[str]:
@@ -237,6 +243,8 @@ class EnumerationConfiguration(object):
             "raises",
             "flags",
             "start",
+            "steps",
+            "times",
             "typecast",
         ]
 
@@ -373,7 +381,7 @@ class EnumerationConfiguration(object):
         self._flags = flags
 
     @property
-    def start(self) -> bool | None:
+    def start(self) -> int | None:
         return self._start
 
     @start.setter
@@ -385,6 +393,34 @@ class EnumerationConfiguration(object):
                 "The 'start' argument, if specified, must have a positive integer value!"
             )
         self._start = start
+
+    @property
+    def steps(self) -> int | None:
+        return self._steps
+
+    @steps.setter
+    def steps(self, steps: int | None):
+        if steps is None:
+            pass
+        elif not (isinstance(steps, int) and steps >= 0):
+            raise TypeError(
+                "The 'steps' argument, if specified, must have a positive integer value!"
+            )
+        self._steps = steps
+
+    @property
+    def times(self) -> int | None:
+        return self._times
+
+    @times.setter
+    def times(self, times: int | None):
+        if times is None:
+            pass
+        elif not (isinstance(times, int) and times >= 0):
+            raise TypeError(
+                "The 'times' argument, if specified, must have a positive integer value!"
+            )
+        self._times = times
 
     @property
     def typecast(self) -> bool | None:
@@ -433,6 +469,8 @@ class EnumerationMetaClass(type):
         raises: bool = None,
         flags: bool = None,
         start: int = None,
+        steps: int = None,
+        times: int = None,
         typecast: bool = None,
         **kwargs,
     ) -> dict:
@@ -443,7 +481,7 @@ class EnumerationMetaClass(type):
         any other keyword arguments that are included in the class signature call."""
 
         logger.debug(
-            "[EnumerationMetaClass] %s.__prepare__(name: %s, bases: %s, unique: %s, aliased: %s, overwritable: %s, subclassable: %s, removable: %s, raises: %s, flags: %s, start: %s, typecast: %s, kwargs: %s)",
+            "[EnumerationMetaClass] %s.__prepare__(name: %s, bases: %s, unique: %s, aliased: %s, overwritable: %s, subclassable: %s, removable: %s, raises: %s, flags: %s, start: %s, steps: %s, times: %s, typecast: %s, kwargs: %s)",
             name,
             name,
             bases,
@@ -455,6 +493,8 @@ class EnumerationMetaClass(type):
             raises,
             flags,
             start,
+            steps,
+            times,
             typecast,
             kwargs,
         )
@@ -512,9 +552,27 @@ class EnumerationMetaClass(type):
                 "The 'start' argument, if specified, must have a positive integer value!"
             )
 
+        if steps is None:
+            pass
+        elif isinstance(steps, int) and steps >= 1:
+            pass
+        else:
+            raise TypeError(
+                "The 'steps' argument, if specified, must have a positive integer value!"
+            )
+
+        if times is None:
+            pass
+        elif isinstance(times, int) and times >= 1:
+            pass
+        else:
+            raise TypeError(
+                "The 'times' argument, if specified, must have a positive integer value!"
+            )
+
         # Configure the auto() class for subsequent use, resetting the sequence, setting
         # the new start value, and whether values should be flag values (powers of 2)
-        auto.configure(start=start, flags=flags)
+        auto.configure(start=start, steps=steps, times=times, flags=flags)
 
         return dict()
 
@@ -529,6 +587,8 @@ class EnumerationMetaClass(type):
         raises: bool = None,  # False
         flags: bool = None,  # False
         start: int = None,  # None
+        steps: int = None,  # None
+        times: int = None,  # None
         typecast: bool = None,  # True
         **kwargs,
     ):
@@ -595,6 +655,20 @@ class EnumerationMetaClass(type):
                 "The 'start' argument, if specified, must have a positive integer value!"
             )
 
+        if steps is None:
+            pass
+        elif not (isinstance(steps, int) and steps >= 0):
+            raise TypeError(
+                "The 'steps' argument, if specified, must have a positive integer value!"
+            )
+
+        if times is None:
+            pass
+        elif not (isinstance(times, int) and times >= 0):
+            raise TypeError(
+                "The 'times' argument, if specified, must have a positive integer value!"
+            )
+
         if typecast is None:
             pass
         elif not isinstance(typecast, bool):
@@ -611,6 +685,8 @@ class EnumerationMetaClass(type):
             raises=raises,
             flags=flags,
             start=start,
+            steps=steps,
+            times=times,
             typecast=typecast,
         )
 
@@ -689,6 +765,12 @@ class EnumerationMetaClass(type):
                             " >>> start        => %s", base_configuration.start
                         )
                         logger.debug(
+                            " >>> steps        => %s", base_configuration.steps
+                        )
+                        logger.debug(
+                            " >>> times        => %s", base_configuration.times
+                        )
+                        logger.debug(
                             " >>> typecast     => %s", base_configuration.typecast
                         )
 
@@ -730,6 +812,12 @@ class EnumerationMetaClass(type):
                             " >>> (updated) start        => %s", configuration.start
                         )
                         logger.debug(
+                            " >>> (updated) steps        => %s", configuration.steps
+                        )
+                        logger.debug(
+                            " >>> (updated) times        => %s", configuration.times
+                        )
+                        logger.debug(
                             " >>> (updated) typecast     => %s", configuration.typecast
                         )
 
@@ -764,6 +852,8 @@ class EnumerationMetaClass(type):
             raises=False,
             flags=False,
             start=1,
+            steps=1,
+            times=None,
             typecast=True,
         )
 
@@ -781,6 +871,8 @@ class EnumerationMetaClass(type):
         logger.debug(" >>> (after defaults) raises       => %s", configuration.raises)
         logger.debug(" >>> (after defaults) flags        => %s", configuration.flags)
         logger.debug(" >>> (after defaults) start        => %s", configuration.start)
+        logger.debug(" >>> (after defaults) steps        => %s", configuration.steps)
+        logger.debug(" >>> (after defaults) times        => %s", configuration.times)
         logger.debug(" >>> (after defaults) typecast     => %s", configuration.typecast)
 
         # Iterate over the class attributes, looking for any enumeration options
@@ -931,6 +1023,9 @@ class EnumerationMetaClass(type):
         logger.debug(" >>> removable     => %s", configuration.removable)
         logger.debug(" >>> raises        => %s", configuration.raises)
         logger.debug(" >>> flags         => %s", configuration.flags)
+        logger.debug(" >>> start         => %s", configuration.start)
+        logger.debug(" >>> steps         => %s", configuration.steps)
+        logger.debug(" >>> times         => %s", configuration.times)
         logger.debug(" >>> typecast      => %s", configuration.typecast)
 
         # Store the enumeration class configuration options for future reference
@@ -1029,6 +1124,7 @@ class EnumerationMetaClass(type):
         elif self._enumerations and name in self._enumerations:
             return self._enumerations[name]
         else:
+            # EnumerationOptionError subclasses AttributeError so we adhere to convention
             raise EnumerationOptionError(
                 "The '%s' enumeration class, has no '%s' enumeration option nor annotation property!"
                 % (self.__name__, name)
@@ -1273,11 +1369,12 @@ class EnumerationMetaClass(type):
         self,
         value: Enumeration | object = None,
         name: str = None,
+        caselessly: bool = False,
     ) -> Enumeration | None:
         """The 'reconcile' method can be used to reconcile Enumeration type, enumeration
         values, or enumeration names to their matching Enumeration type instances. If a
-        match is found the Enumeration type instance will be returned otherwise None
-        will be returned."""
+        match is found the Enumeration type instance will be returned otherwise None will
+        be returned, unless the class is configured to raise an error for mismatches."""
 
         if name is None and value is None:
             raise ValueError(
@@ -1295,14 +1392,20 @@ class EnumerationMetaClass(type):
         reconciled: Enumeration = None
 
         for attribute, enumeration in self._enumerations.items():
-            if isinstance(name, str) and enumeration.name == name:
-                reconciled = enumeration
-                break
-            elif isinstance(value, Enumeration):
+            if isinstance(value, Enumeration):
                 if enumeration is value:
                     reconciled = enumeration
                     break
-            elif isinstance(value, str) and enumeration.name == value:
+            elif isinstance(name, str) and (
+                (enumeration.name == name)
+                or (caselessly and (enumeration.name.casefold() == name.casefold()))
+            ):
+                reconciled = enumeration
+                break
+            elif isinstance(value, str) and (
+                (enumeration.name == value)
+                or (caselessly and (enumeration.name.casefold() == value.casefold()))
+            ):
                 reconciled = enumeration
                 break
             elif enumeration.value == value:
@@ -1335,6 +1438,11 @@ class EnumerationMetaClass(type):
         match is found for the enumeration value or name, otherwise it returns False."""
 
         return not self.reconcile(value=value, name=name) is None
+
+    def options(self) -> MappingProxyType[str, Enumeration]:
+        """The 'options' method returns a read-only mapping proxy of the options."""
+
+        return MappingProxyType(self._enumerations)
 
 
 class Enumeration(metaclass=EnumerationMetaClass):
@@ -1480,34 +1588,44 @@ class Enumeration(metaclass=EnumerationMetaClass):
         equals: bool = False
 
         if isinstance(other, Enumeration):
-            return self is other
-
-        for attribute, enumeration in self._enumerations.items():
-            # logger.info("%s(%s).__eq__(other: %s) enumeration => %s" % (self.__class__.__name__, self, other, enumeration))
-
-            if enumeration.value == other:
-                equals = True
-                break
-            elif enumeration.name == other:
-                equals = True
-                break
+            equals = self is other
+        elif self.name == other:
+            equals = True
+        elif self.value == other:
+            equals = True
 
         return equals
 
     def __getattr__(self, name) -> object:
+        """The '__getattr__' method provides support for accessing attribute values that
+        have been assigned to the current enumeration option. If a matching attribute can
+        be found, its value will be returned, otherwise an exception will be raised."""
+
         logger.debug("%s.__getattr__(name: %s)", self.__class__.__name__, name)
 
-        if name.startswith("_") or name in self.__class__._special:
+        if name.startswith("_") or name in self.__class__._special or name in dir(self):
             return object.__getattribute__(self, name)
         elif self._enumerations and name in self._enumerations:
             return self._enumerations[name]
         elif self._annotations and name in self._annotations:
             return self._annotations[name]
         else:
+            # EnumerationOptionError subclasses AttributeError so we adhere to convention
             raise EnumerationOptionError(
                 "The '%s' enumeration class, has no '%s' enumeration option nor annotation property!"
                 % (self.__class__.__name__, name)
             )
+
+    def get(self, name: str, default: object = None) -> object | None:
+        """The 'get' method provides support for accessing annotation values that may
+        have been assigned to the current enumeration option. If a matching annotation
+        can be found, its value will be returned, otherwise the default value will be
+        returned, which defaults to None, but may be specified as any value."""
+
+        if name in self._annotations:
+            return self._annotations[name]
+        else:
+            return default
 
     @property
     def enumeration(self) -> Enumeration:
@@ -1528,20 +1646,42 @@ class Enumeration(metaclass=EnumerationMetaClass):
     @property
     def aliased(self) -> bool:
         logger.debug(
-            "%s.aliased() >>> id(Colors._enumerations) => %s (%s)",
+            "%s.aliased() >>> id(%s) => %s (%s)",
             self.__class__.__name__,
+            self,
             id(self._enumerations),
             type(self._enumerations),
         )
 
         for name, enumeration in self._enumerations.items():
-            logger.info(" >>> checking for alias: %s => %s", name, enumeration)
+            logger.debug(" >>> checking for alias: %s => %s", name, enumeration)
 
             if isinstance(enumeration, Enumeration):
-                if name != enumeration.name:
+                if self is enumeration and enumeration.name != name:
                     return True
 
         return False
+
+    @property
+    def aliases(self) -> list[Enumeration]:
+        logger.debug(
+            "%s.aliases() >>> id(%s) => %s (%s)",
+            self.__class__.__name__,
+            self,
+            id(self._enumerations),
+            type(self._enumerations),
+        )
+
+        aliases: list[Enumeration] = []
+
+        for name, enumeration in self._enumerations.items():
+            logger.debug(" >>> checking for alias: %s => %s", name, enumeration)
+
+            if isinstance(enumeration, Enumeration):
+                if self is enumeration and enumeration.name != name:
+                    aliases.append(enumeration)
+
+        return aliases
 
 
 class EnumerationType(Enumeration, typecast=False):
@@ -1582,6 +1722,15 @@ class EnumerationInteger(int, Enumeration):
 
     def __repr__(self) -> str:
         return Enumeration.__repr__(self)
+
+    def __hash__(self) -> id:
+        return super().__hash__()
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, (int, self.__class__)):
+            return super().__eq__(other)
+        else:
+            return Enumeration.__eq__(self, other)
 
 
 class EnumerationFloat(float, Enumeration):
@@ -1626,6 +1775,15 @@ class EnumerationComplex(complex, Enumeration):
     def __repr__(self) -> str:
         return Enumeration.__repr__(self)
 
+    def __hash__(self) -> id:
+        return super().__hash__()
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, (float, self.__class__)):
+            return super().__eq__(other)
+        else:
+            return Enumeration.__eq__(self, other)
+
 
 class EnumerationString(str, Enumeration):
     """An Enumeration subclass where all values are string values."""
@@ -1649,6 +1807,15 @@ class EnumerationString(str, Enumeration):
     def __repr__(self) -> str:
         return Enumeration.__repr__(self)
 
+    def __hash__(self) -> id:
+        return super().__hash__()
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, (str, self.__class__)):
+            return super().__eq__(other)
+        else:
+            return Enumeration.__eq__(self, other)
+
 
 class EnumerationBytes(bytes, Enumeration):
     """An Enumeration subclass where all values are bytes values."""
@@ -1668,6 +1835,15 @@ class EnumerationBytes(bytes, Enumeration):
 
     def __repr__(self) -> str:
         return Enumeration.__repr__(self)
+
+    def __hash__(self) -> id:
+        return super().__hash__()
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, (bytes, self.__class__)):
+            return super().__eq__(other)
+        else:
+            return Enumeration.__eq__(self, other)
 
 
 class EnumerationTuple(tuple, Enumeration):
@@ -1689,6 +1865,15 @@ class EnumerationTuple(tuple, Enumeration):
     def __repr__(self) -> str:
         return Enumeration.__repr__(self)
 
+    def __hash__(self) -> id:
+        return super().__hash__()
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, (tuple, self.__class__)):
+            return super().__eq__(other)
+        else:
+            return Enumeration.__eq__(self, other)
+
 
 class EnumerationSet(set, Enumeration):
     """An Enumeration subclass where all values are set values."""
@@ -1709,6 +1894,15 @@ class EnumerationSet(set, Enumeration):
     def __repr__(self) -> str:
         return Enumeration.__repr__(self)
 
+    def __hash__(self) -> id:
+        return super().__hash__()
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, (set, self.__class__)):
+            return super().__eq__(other)
+        else:
+            return Enumeration.__eq__(self, other)
+
 
 class EnumerationList(list, Enumeration):
     """An Enumeration subclass where all values are list values."""
@@ -1728,6 +1922,15 @@ class EnumerationList(list, Enumeration):
 
     def __repr__(self) -> str:
         return Enumeration.__repr__(self)
+
+    def __hash__(self) -> id:
+        return super().__hash__()
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, (list, self.__class__)):
+            return super().__eq__(other)
+        else:
+            return Enumeration.__eq__(self, other)
 
 
 class EnumerationDictionary(dict, Enumeration):
@@ -1751,6 +1954,15 @@ class EnumerationDictionary(dict, Enumeration):
 
     def __repr__(self) -> str:
         return Enumeration.__repr__(self)
+
+    def __hash__(self) -> id:
+        return super().__hash__()
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, (dict, self.__class__)):
+            return super().__eq__(other)
+        else:
+            return Enumeration.__eq__(self, other)
 
 
 class EnumerationFlag(int, Enumeration):
@@ -1892,6 +2104,15 @@ class EnumerationFlag(int, Enumeration):
 
     def __repr__(self) -> str:
         return Enumeration.__repr__(self)
+
+    def __hash__(self) -> id:
+        return super().__hash__()
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, (int, self.__class__)):
+            return super().__eq__(other)
+        else:
+            return Enumeration.__eq__(self, other)
 
     def __or__(self, other: EnumerationFlag):  # called for: "a | b" (bitwise or)
         """Support performing a bitwise or between the current EnumerationFlag

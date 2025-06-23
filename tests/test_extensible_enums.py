@@ -1,5 +1,6 @@
 import pytest
 import logging
+import types
 
 import enumerific
 
@@ -815,6 +816,23 @@ def test_extensible_enum_subclassing_with_duplicate_non_unique_value():
     # Note that although VIOLET and PURPLE share the same value (6) they are not aliases
     assert not Colors.VIOLET is Colors.PURPLE
     assert not Colors.PURPLE is Colors.VIOLET
+
+
+def test_extensible_enum_options():
+    class Colors(Enumeration):
+        RED = 1
+        GREEN = 2
+        BLUE = 3
+
+    options = Colors.options()
+
+    assert isinstance(options, types.MappingProxyType)
+
+    assert len(options) == 3
+
+    for name, option in options.items():
+        assert isinstance(option.name, str)
+        assert isinstance(option.value, int)
 
 
 def test_extensible_enum_subclassing_disabled_exception():
