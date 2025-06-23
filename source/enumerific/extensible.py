@@ -1369,11 +1369,12 @@ class EnumerationMetaClass(type):
         self,
         value: Enumeration | object = None,
         name: str = None,
+        caselessly: bool = False,
     ) -> Enumeration | None:
         """The 'reconcile' method can be used to reconcile Enumeration type, enumeration
         values, or enumeration names to their matching Enumeration type instances. If a
-        match is found the Enumeration type instance will be returned otherwise None
-        will be returned."""
+        match is found the Enumeration type instance will be returned otherwise None will
+        be returned, unless the class is configured to raise an error for mismatches."""
 
         if name is None and value is None:
             raise ValueError(
@@ -1391,14 +1392,20 @@ class EnumerationMetaClass(type):
         reconciled: Enumeration = None
 
         for attribute, enumeration in self._enumerations.items():
-            if isinstance(name, str) and enumeration.name == name:
-                reconciled = enumeration
-                break
-            elif isinstance(value, Enumeration):
+            if isinstance(value, Enumeration):
                 if enumeration is value:
                     reconciled = enumeration
                     break
-            elif isinstance(value, str) and enumeration.name == value:
+            elif isinstance(name, str) and (
+                (enumeration.name == name)
+                or (caselessly and (enumeration.name.casefold() == name.casefold()))
+            ):
+                reconciled = enumeration
+                break
+            elif isinstance(value, str) and (
+                (enumeration.name == value)
+                or (caselessly and (enumeration.name.casefold() == value.casefold()))
+            ):
                 reconciled = enumeration
                 break
             elif enumeration.value == value:
@@ -1431,6 +1438,11 @@ class EnumerationMetaClass(type):
         match is found for the enumeration value or name, otherwise it returns False."""
 
         return not self.reconcile(value=value, name=name) is None
+
+    def options(self) -> MappingProxyType[str, Enumeration]:
+        """The 'options' method returns a read-only mapping proxy of the options."""
+
+        return MappingProxyType(self._enumerations)
 
 
 class Enumeration(metaclass=EnumerationMetaClass):
@@ -1634,20 +1646,42 @@ class Enumeration(metaclass=EnumerationMetaClass):
     @property
     def aliased(self) -> bool:
         logger.debug(
-            "%s.aliased() >>> id(Colors._enumerations) => %s (%s)",
+            "%s.aliased() >>> id(%s) => %s (%s)",
             self.__class__.__name__,
+            self,
             id(self._enumerations),
             type(self._enumerations),
         )
 
         for name, enumeration in self._enumerations.items():
-            logger.info(" >>> checking for alias: %s => %s", name, enumeration)
+            logger.debug(" >>> checking for alias: %s => %s", name, enumeration)
 
             if isinstance(enumeration, Enumeration):
-                if name != enumeration.name:
+                if self is enumeration and enumeration.name != name:
                     return True
 
         return False
+
+    @property
+    def aliases(self) -> list[Enumeration]:
+        logger.debug(
+            "%s.aliases() >>> id(%s) => %s (%s)",
+            self.__class__.__name__,
+            self,
+            id(self._enumerations),
+            type(self._enumerations),
+        )
+
+        aliases: list[Enumeration] = []
+
+        for name, enumeration in self._enumerations.items():
+            logger.debug(" >>> checking for alias: %s => %s", name, enumeration)
+
+            if isinstance(enumeration, Enumeration):
+                if self is enumeration and enumeration.name != name:
+                    aliases.append(enumeration)
+
+        return aliases
 
 
 class EnumerationType(Enumeration, typecast=False):
