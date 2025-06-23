@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing
+import collections
 
 from enumerific.logging import logger
 
@@ -17,7 +18,71 @@ from types import MappingProxyType
 logger = logger.getChild(__name__)
 
 
-class auto(int):
+class anno(collections.abc.Mapping):
+    """The annotations class supports adding annotations to an Enumeration option."""
+
+    _value: object = None
+    _annotations: dict[str, object] = None
+
+    def __init__(self, value: object, **annotations: dict[str, object]):
+        self._value: object = value
+
+        for key, value in annotations.items():
+            if not isinstance(key, str):
+                raise TypeError("All annotation values must have string keys!")
+
+        self._annotations: dict[str, object] = annotations
+
+    def __len__(self) -> int:
+        return len(self._annotations)
+
+    def __iter__(self) -> str:
+        for key in self._annotations.keys():
+            yield key
+
+    def __contains__(self, other: object) -> bool:
+        return other in self._annotations
+
+    def __getitem__(self, key: str) -> object | None:
+        if key in self._annotations:
+            return self._annotations[key]
+        else:
+            raise KeyError(f"The annotation does not have an '{key}' item!")
+
+    def __setitem__(self, key: str, value: object):
+        raise NotImplementedError
+
+    def __delitem__(self, key: str, value: object):
+        raise NotImplementedError
+
+    def __getattr__(self, name: str) -> object | None:
+        if name.startswith("_"):
+            return super().__getattr__(name)
+        elif name in self._annotations:
+            return self._annotations[name]
+        else:
+            raise AttributeError(f"The annotation does not have an '{name}' attribute!")
+
+    def __setattr__(self, name: str, value: object):
+        if name.startswith("_"):
+            return super().__setattr__(name, value)
+        else:
+            raise NotImplementedError
+
+    def __detattr__(self, name: str):
+        raise NotImplementedError
+
+    def get(self, name: str, default: object = None) -> object | None:
+        if name in self._annotations:
+            return self._annotations[name]
+        else:
+            return default
+
+    def unwrap(self) -> object:
+        return self._value
+
+
+class auto(int, anno):
     """Generate an automatically inrementing integer each time the class is instantiated
     based on the previously supplied configuration, which allows the start and steps to
     be configured as well as if the integers should be generated as powers/flags."""
@@ -32,6 +97,7 @@ class auto(int):
         cls,
         start: int = None,
         steps: int = None,
+        times: int = None,
         power: int | bool = None,
         flags: bool = None,
     ):
@@ -55,6 +121,15 @@ class auto(int):
         else:
             raise TypeError(
                 "The 'steps' argument, if specified, must have a positive integer value!"
+            )
+
+        if times is None:
+            times = 0
+        elif isinstance(times, int) and times >= 0:
+            pass
+        else:
+            raise TypeError(
+                "The 'times' argument, if specified, must have a positive integer value!"
             )
 
         if power is None:
@@ -90,17 +165,21 @@ class auto(int):
 
         cls.steps = steps
 
+        cls.times = times
+
         cls.power = power
 
         cls.value = cls.start
 
-    def __new__(cls):
+    def __new__(cls, **annotations: dict[str, object]):
         """Create a new integer (int) instance upon each call, incrementing the value as
         per the configuration defined before this method is called; the configuration
         can be changed at any time and the next call to this method will generate the
         next value based on the most recently specified configuration options."""
 
-        if cls.power > 0:
+        if cls.times > 0:
+            value = cls.value * cls.times
+        elif cls.power > 0:
             value = pow(cls.power, (cls.value - 1))
         else:
             value = cls.value
@@ -108,6 +187,9 @@ class auto(int):
         cls.value += cls.steps
 
         return super().__new__(cls, value)
+
+    def __init__(self, **annotations: dict[str, object]):
+        super().__init__(self.value, **annotations)
 
 
 class EnumerationConfiguration(object):
@@ -543,6 +625,7 @@ class EnumerationMetaClass(type):
             return super().__new__(cls, *args, **kwargs)
 
         enumerations: dict[str, object] = {}  # Keep track of the enumeration options
+        annotations: dict[str, dict] = {}  # Keep track of the enumeration annotations
 
         names: list[object] = []  # Keep track of the option names to check uniqueness
         values: list[object] = []  # Keep track of the option values to check uniqueness
@@ -709,6 +792,12 @@ class EnumerationMetaClass(type):
                 % (index, attribute, value, type(value))
             )
 
+            if isinstance(value, auto):
+                annotations[attribute] = value
+            elif isinstance(value, anno):
+                annotations[attribute] = value
+                value = value.unwrap()  # unwrap the annotated value
+
             if attribute.startswith("_") or attribute in cls._special:
                 continue
             elif attribute in names:
@@ -730,8 +819,8 @@ class EnumerationMetaClass(type):
                     )
                 else:
                     raise EnumerationNonUniqueError(
-                        "The enumeration option, '%s', has a non-unique value, %r, however, unless either the keyword argument 'unique=False' or 'aliased=True' are passed during class construction, all enumeration options must have unique values!"
-                        % (attribute, value)
+                        "The enumeration option, '%s', has a non-unique value, %r, however, unless either the keyword argument 'unique=False' or 'aliased=True' are passed during class construction, all enumeration options must have unique values; existing values: %s!"
+                        % (attribute, value, values)
                     )
             else:
                 logger.debug(
@@ -762,6 +851,8 @@ class EnumerationMetaClass(type):
 
         if isinstance(_enumerations, dict):
             attributes["base_enumerations"] = _enumerations
+
+        attributes["annotations"] = annotations
 
         # If the new enumeration class is not subclassing an existing enumeration class
         if configuration.typecast is True and (
@@ -876,6 +967,8 @@ class EnumerationMetaClass(type):
         logger.debug("+" * 100)
 
         if isinstance(enumerations := attributes.get("enumerations"), dict):
+            annotations: dict[str, anno] = attributes.get("annotations") or {}
+
             for attribute, value in enumerations.items():
                 if attribute in self._enumerations:
                     continue
@@ -913,6 +1006,7 @@ class EnumerationMetaClass(type):
                             enumeration=self,
                             name=attribute,
                             value=value,
+                            annotations=annotations.get(attribute),
                         )
 
                 logger.debug(
@@ -936,7 +1030,7 @@ class EnumerationMetaClass(type):
             return self._enumerations[name]
         else:
             raise EnumerationOptionError(
-                "The '%s' enumeration class, has no '%s' enumeration option!"
+                "The '%s' enumeration class, has no '%s' enumeration option nor annotation property!"
                 % (self.__name__, name)
             )
 
@@ -953,6 +1047,10 @@ class EnumerationMetaClass(type):
         return members
 
     def __contains__(self, other: Enumeration | object) -> bool:
+        logger.debug(
+            "%s(%s).__contains__(other: %s)", self.__class__.__name__, self, other
+        )
+
         contains: bool = False
 
         for name, enumeration in self._enumerations.items():
@@ -1245,6 +1343,7 @@ class Enumeration(metaclass=EnumerationMetaClass):
     _metaclass: EnumerationMetaClass = None
     _enumeration: Enumeration = None
     _enumerations: dict[str, Enumeration] = None
+    _annotations: anno = None
     _name: str = None
     _value: object = None
     _aliased: Enumeration = None
@@ -1257,6 +1356,7 @@ class Enumeration(metaclass=EnumerationMetaClass):
         name: str = None,
         value: object = None,
         aliased: Enumeration = None,
+        annotations: anno = None,
         **kwargs,
     ) -> Enumeration | None:
         # Supports reconciling enumeration options via their name/value via __new__ call
@@ -1264,12 +1364,14 @@ class Enumeration(metaclass=EnumerationMetaClass):
             value = args[0]
 
         logger.debug(
-            "[Enumeration] %s.__new__(args: %s, enumeration: %s, name: %s, value: %s, kwargs: %s)",
+            "[Enumeration] %s.__new__(args: %s, enumeration: %s, name: %s, value: %s, aliased: %s, annotations: %s, kwargs: %s)",
             cls.__name__,
             args,
             enumeration,
             name,
             value,
+            aliased,
+            annotations,
             kwargs,
         )
 
@@ -1298,15 +1400,18 @@ class Enumeration(metaclass=EnumerationMetaClass):
         name: str = None,
         value: object = None,
         aliased: Enumeration = None,
+        annotations: anno = None,
         **kwargs,
     ) -> None:
         logger.debug(
-            "[Enumeration] %s.__init__(args: %s, enumeration: %s, name: %s, value: %s, kwargs: %s)",
+            "[Enumeration] %s.__init__(args: %s, enumeration: %s, name: %s, value: %s, aliased: %s, annotations: %s, kwargs: %s)",
             self.__class__.__name__,
             args,
             enumeration,
             name,
             value,
+            aliased,
+            annotations,
             kwargs,
         )
 
@@ -1340,6 +1445,15 @@ class Enumeration(metaclass=EnumerationMetaClass):
                 "The 'aliased' argument, if specified, must reference an Enumeration class instance!"
             )
 
+        if annotations is None:
+            pass
+        elif isinstance(annotations, anno):
+            self._annotations = annotations
+        else:
+            raise TypeError(
+                "The 'annotations' argument, if specified, must reference an anno class instance!"
+            )
+
     # NOTE: This method is only called if the instance is called via instance(..) syntax
     def __call__(self, *args, **kwargs) -> Enumeration | None:
         logger.debug(
@@ -1361,25 +1475,17 @@ class Enumeration(metaclass=EnumerationMetaClass):
         return id(self)
 
     def __eq__(self, other: Enumeration | object) -> bool:
-        logger.debug("%s.__eq__(other: %s)" % (self.__class__.__name__, other))
+        logger.debug("%s(%s).__eq__(other: %s)", self.__class__.__name__, self, other)
 
         equals: bool = False
 
         if isinstance(other, Enumeration):
-            if self is other:
-                return True
+            return self is other
 
         for attribute, enumeration in self._enumerations.items():
-            logger.info(
-                "%s.__eq__(other: %s) enumeration => %s"
-                % (self.__class__.__name__, other, enumeration)
-            )
+            # logger.info("%s(%s).__eq__(other: %s) enumeration => %s" % (self.__class__.__name__, self, other, enumeration))
 
-            if isinstance(other, Enumeration):
-                if enumeration is other:
-                    equals = True
-                    break
-            elif enumeration.value == other:
+            if enumeration.value == other:
                 equals = True
                 break
             elif enumeration.name == other:
@@ -1387,6 +1493,21 @@ class Enumeration(metaclass=EnumerationMetaClass):
                 break
 
         return equals
+
+    def __getattr__(self, name) -> object:
+        logger.debug("%s.__getattr__(name: %s)", self.__class__.__name__, name)
+
+        if name.startswith("_") or name in self.__class__._special:
+            return object.__getattribute__(self, name)
+        elif self._enumerations and name in self._enumerations:
+            return self._enumerations[name]
+        elif self._annotations and name in self._annotations:
+            return self._annotations[name]
+        else:
+            raise EnumerationOptionError(
+                "The '%s' enumeration class, has no '%s' enumeration option nor annotation property!"
+                % (self.__class__.__name__, name)
+            )
 
     @property
     def enumeration(self) -> Enumeration:
