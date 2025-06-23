@@ -8,7 +8,7 @@ The Enumerific library's `Enumeration` class offers the following features:
  * Enumerific enumerations can hold option values of the same or mixed types, including `int`, `float`, `complex`, `str`, `bytes`, `set`, `tuple`, `list`, `dict` as well as arbitrary `object` types;
  * Enumerific enumeration options can be accessed directly as native data types and enumeration options can be used anywhere that the corresponding native data types can be used;
  * Support for automatic typecasting of the `Enumeration` base class to support the use of enumeration option values interchangeably with native data type values;
- * Enumerific enumerations options can be added after an `Enumeration` class has been created either through extending an existing enumerations class through subclassing or by registering new options directly on an existing enumerations class via the `.register()` method; this is especially useful for cases where enumeration options may not be known before runtime;
+ * Enumerific enumerations options can be added after an `Enumeration` class has been created either through extending an existing enumerations class by subclassing or by registering new options directly on an existing enumerations class via the `.register()` method; this is especially useful for cases where enumeration options may not all be known prior to runtime;
  * Enumerific enumerations options can be removed after an `Enumeration` class has been created via the `.unregister()` method; this specialised behaviour is prevented by default, but can be enabled for advanced use cases;
  * Enforcement of unique values for all options within an enumeration, unless overridden;
  * Support for aliasing enumeration options;
@@ -464,7 +464,7 @@ assert not (permissions & Permissions.WRITE) == Permissions.WRITE
 assert not Permissions.WRITE in permissions
 assert str(permissions) == "Permissions.READ"
 
-# The order of the name components always follows the order that the underlaying flags were derived
+# The order of the name components follows the order the underlaying flags were declared
 assert str(Permissions.READ | Permissions.WRITE) == "Permissions.READ|WRITE"
 assert str(Permissions.WRITE | Permissions.READ) == "Permissions.READ|WRITE"
 assert (
@@ -572,7 +572,7 @@ assert Colors.PURPLE.rgb == (255, 0, 255)
 assert Colors.PURPLE.primary is False
 ```
 
-# Enumerific Library Extended Enumerations: Classes & Methods
+# Enumerific Library Enumerations: Classes & Methods
 
 The Enumerific library's `Enumeration` class is a greenfield implementation of enumerations
 and does not inherit from any of the standard library enumeration classes, but offers equivalent
