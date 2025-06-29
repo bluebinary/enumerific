@@ -663,6 +663,64 @@ def test_extensible_enum_subclassing():
     assert "PURPLE" in Colors
 
 
+def test_enumeration_option_backfilling():
+    # By default when an Enumeration class is created, it does not allow the backfilling
+    # of enumeration options from any subclasses; options defined on any subclasses will
+    # only be available on that subclass, and will not affect the options offered by the
+    # superclass itself; this behavior can be modified by setting the `backfill` keyword
+    # argument to `True` when creating the enumeration class.
+
+    # This first case demonstrates default behavior, where backfilling is prevented:
+    class Colors(Enumeration):
+        RED = 1
+        GREEN = 2
+        BLUE = 3
+
+    # Create a subclass, adding options which are distinctly available on the subclass
+    # but which will not affect the options available directly from the superclass:
+    class MoreColors(Colors):
+        PURPLE = 4
+        GOLD = 5
+
+    assert "RED" in Colors
+    assert "GREEN" in Colors
+    assert "BLUE" in Colors
+    assert not "PURPLE" in Colors
+    assert not "GOLD" in Colors
+
+    assert "RED" in MoreColors
+    assert "GREEN" in MoreColors
+    assert "BLUE" in MoreColors
+    assert "PURPLE" in MoreColors
+    assert "GOLD" in MoreColors
+
+    # To override default behavior and to allow backfilling of options from subclasses,
+    # the `backfill` keyword argument can be set to `True` when creating the class. This
+    # effectively creates an alternative to extend an existing enumeration class through
+    # subclassing and the side-effect of backfilling rather than using the `.register()`
+    # method to add new options to an existing enumeration class:
+    class Colors(Enumeration, backfill=True):
+        RED = 1
+        GREEN = 2
+        BLUE = 3
+
+    class MoreColors(Colors):
+        PURPLE = 4
+        GOLD = 5
+
+    assert "RED" in Colors
+    assert "GREEN" in Colors
+    assert "BLUE" in Colors
+    assert "PURPLE" in Colors
+    assert "GOLD" in Colors
+
+    assert "RED" in MoreColors
+    assert "GREEN" in MoreColors
+    assert "BLUE" in MoreColors
+    assert "PURPLE" in MoreColors
+    assert "GOLD" in MoreColors
+
+
 def test_extensible_enum_subclassing_with_duplicate_value_exception():
     """Ensure that subclassing an extensible Enumeration class then reusing an existing
     enumeration option value raises an exception when neither the `unique=False` or
@@ -700,7 +758,7 @@ def test_extensible_enum_subclassing_with_duplicate_aliased_value():
     enumeration option value raises an exception when neither the `unique=False` or
     `aliased=True` constructor options are specified at enumeration class creation."""
 
-    class Colors(Enumeration, aliased=True):
+    class Colors(Enumeration, aliased=True, backfill=True):
         RED = 1
         ORANGE = 2
         YELLOW = 3

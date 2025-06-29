@@ -196,7 +196,8 @@ class EnumerationConfiguration(object):
     """The EnumerationConfiguration class holds the Enumeration configuration options"""
 
     _unique: bool = None
-    _aliased: bool = False
+    _aliased: bool = None
+    _backfill: bool = None
     _overwritable: bool = None
     _removable: bool = None
     _subclassable: bool = None
@@ -211,6 +212,7 @@ class EnumerationConfiguration(object):
         self,
         unique: bool = None,
         aliased: bool = None,
+        backfill: bool = None,
         overwritable: bool = None,
         removable: bool = None,
         subclassable: bool = None,
@@ -223,6 +225,7 @@ class EnumerationConfiguration(object):
     ):
         self.unique = unique
         self.aliased = aliased
+        self.backfill = backfill
         self.overwritable = overwritable
         self.removable = removable
         self.subclassable = subclassable
@@ -237,6 +240,7 @@ class EnumerationConfiguration(object):
         return [
             "unique",
             "aliased",
+            "backfill",
             "overwritable",
             "removable",
             "subclassable",
@@ -309,6 +313,20 @@ class EnumerationConfiguration(object):
                 "The 'aliased' argument, if specified, must have a boolean value!"
             )
         self._aliased = aliased
+
+    @property
+    def backfill(self) -> bool | None:
+        return self._backfill
+
+    @aliased.setter
+    def backfill(self, backfill: bool | None):
+        if backfill is None:
+            pass
+        elif not isinstance(backfill, bool):
+            raise TypeError(
+                "The 'backfill' argument, if specified, must have a boolean value!"
+            )
+        self._backfill = backfill
 
     @property
     def overwritable(self) -> bool | None:
@@ -463,6 +481,7 @@ class EnumerationMetaClass(type):
         bases: tuple[type],
         unique: bool = None,
         aliased: bool = None,
+        backfill: bool = None,
         overwritable: bool = None,
         subclassable: bool = None,
         removable: bool = None,
@@ -481,12 +500,13 @@ class EnumerationMetaClass(type):
         any other keyword arguments that are included in the class signature call."""
 
         logger.debug(
-            "[EnumerationMetaClass] %s.__prepare__(name: %s, bases: %s, unique: %s, aliased: %s, overwritable: %s, subclassable: %s, removable: %s, raises: %s, flags: %s, start: %s, steps: %s, times: %s, typecast: %s, kwargs: %s)",
+            "[EnumerationMetaClass] %s.__prepare__(name: %s, bases: %s, unique: %s, aliased: %s, backfill: %s, overwritable: %s, subclassable: %s, removable: %s, raises: %s, flags: %s, start: %s, steps: %s, times: %s, typecast: %s, kwargs: %s)",
             name,
             name,
             bases,
             unique,
             aliased,
+            backfill,
             overwritable,
             subclassable,
             removable,
@@ -581,6 +601,7 @@ class EnumerationMetaClass(type):
         *args,
         unique: bool = None,  # True
         aliased: bool = None,  # False
+        backfill: bool = None, # False
         overwritable: bool = None,  # False
         subclassable: bool = None,  # True
         removable: bool = None,  # False
@@ -611,6 +632,13 @@ class EnumerationMetaClass(type):
         elif not isinstance(aliased, bool):
             raise TypeError(
                 "The 'aliased' argument, if specified, must have a boolean value!"
+            )
+
+        if backfill is None:
+            pass
+        elif not isinstance(backfill, bool):
+            raise TypeError(
+                "The 'backfill' argument, if specified, must have a boolean value!"
             )
 
         if overwritable is None:
@@ -679,6 +707,7 @@ class EnumerationMetaClass(type):
         configuration = EnumerationConfiguration(
             unique=unique,
             aliased=aliased,
+            backfill=backfill,
             overwritable=overwritable,
             subclassable=subclassable,
             removable=removable,
@@ -747,6 +776,9 @@ class EnumerationMetaClass(type):
                             " >>> aliased      => %s", base_configuration.aliased
                         )
                         logger.debug(
+                            " >>> backfill     => %s", base_configuration.backfill
+                        )
+                        logger.debug(
                             " >>> overwritable => %s", base_configuration.overwritable
                         )
                         logger.debug(
@@ -790,6 +822,9 @@ class EnumerationMetaClass(type):
                         )
                         logger.debug(
                             " >>> (updated) aliased      => %s", configuration.aliased
+                        )
+                        logger.debug(
+                            " >>> (updated) backfill     => %s", configuration.backfill
                         )
                         logger.debug(
                             " >>> (updated) overwritable => %s",
@@ -846,6 +881,7 @@ class EnumerationMetaClass(type):
         configuration.defaults(
             unique=True,
             aliased=False,
+            backfill=False,
             overwritable=False,
             subclassable=True,
             removable=False,
@@ -859,6 +895,7 @@ class EnumerationMetaClass(type):
 
         logger.debug(" >>> (after defaults) unique       => %s", configuration.unique)
         logger.debug(" >>> (after defaults) aliased      => %s", configuration.aliased)
+        logger.debug(" >>> (after defaults) backfill     => %s", configuration.backfill)
         logger.debug(
             " >>> (after defaults) overwritable => %s", configuration.overwritable
         )
@@ -1018,6 +1055,7 @@ class EnumerationMetaClass(type):
 
         logger.debug(" >>> unique        => %s", configuration.unique)
         logger.debug(" >>> aliased       => %s", configuration.aliased)
+        logger.debug(" >>> backfill      => %s", configuration.backfill)
         logger.debug(" >>> overwritable  => %s", configuration.overwritable)
         logger.debug(" >>> subclassable  => %s", configuration.subclassable)
         logger.debug(" >>> removable     => %s", configuration.removable)
@@ -1048,7 +1086,13 @@ class EnumerationMetaClass(type):
         )
 
         if isinstance(base_enumerations := attributes.get("base_enumerations"), dict):
-            self._enumerations: dict[str, Enumeration] = base_enumerations
+            if self._configuration.backfill is True:
+                self._enumerations: dict[str, Enumeration] = base_enumerations
+            else:
+                self._enumerations: dict[str, Enumeration] = {}
+
+                for enumeration_name, enumeration in base_enumerations.items():
+                    self._enumerations[enumeration_name] = enumeration
         else:
             self._enumerations: dict[str, Enumeration] = {}
 

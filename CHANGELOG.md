@@ -3,6 +3,7 @@
 ## [1.0.3] - 2025-06-28
 ### Added
 - Support for accessing attributes (methods, properties, etc) of a subclassed enumeration.
+- Support for controlling whether enumeration options added to a subclass are backfilled on the superclass.
 ## [1.0.2] - 2025-06-22
 ### Added
 - Support for annotating an enumeration option with other properties in addition to its value.

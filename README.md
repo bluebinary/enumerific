@@ -13,6 +13,7 @@ The Enumerific library's `Enumeration` class offers the following features:
  * Enforcement of unique values for all options within an enumeration, unless overridden;
  * Support for aliasing enumeration options;
  * Support for redefining enumeration options;
+ * Support for backfilling enumeration options on a superclass when subclassing, and control over this behaviour
  * Support for automatically generating unique number sequences for enumeration options, including powers of two for bitwise enumeration flags, as well as other sequences such as powers of other numbers and factoring;
  * Support for annotating enumeration options with additional arbitrary key-value pairs, which can be particularly useful for associating additional data with a given enumeration option, which may be accessed later anywhere in code that the enumeration option is available;
  * Simple one-line reconciliation of `Enumeration` class options to the corresponding `enums.Enum` class instance that represents the corresponding option; reconciliation by enumeration option name, value and enumeration class instance reference are all supported through the `.reconcile()` class method;
@@ -255,20 +256,39 @@ class MoreColors(Colors):
     PURPLE = 4
     GOLD = 5
 
+#### Example 10: Subclassing with Backfilling
+
+```python
+from enumerific import Enumeration
+
+# To override the default behavior and to allow backfilling of options from subclasses,
+# the `backfill` keyword argument can be set to `True` when creating the class. This
+# effectively creates another way to extend an existing enumeration class through
+# subclassing and its side-effect of backfilling, compared to using the `.register()`
+# method to add new options to an existing enumeration class:
+class Colors(Enumeration, backfill=True):
+    RED = 1
+    GREEN = 2
+    BLUE = 3
+
+assert "RED" in Colors
+assert "GREEN" in Colors
 assert "BLUE" in Colors
-assert Colors.BLUE.name == "BLUE"
-assert Colors.BLUE.value == 3
-assert Colors.BLUE == 3
 
+class MoreColors(Colors):
+    PURPLE = 4
+    GOLD = 5
+
+assert "RED" in MoreColors
+assert "GREEN" in MoreColors
+assert "BLUE" in MoreColors
 assert "PURPLE" in MoreColors
-assert MoreColors.PURPLE.name == "PURPLE"
-assert MoreColors.PURPLE.value == 4
-assert MoreColors.PURPLE == 4
+assert "GOLD" in MoreColors
 
+# As backfilling has been enabled for the superclass, subclass options are available on
+# both the subclass as seen above as well as on the superclass through backfilling:
+assert "PURPLE" in Colors
 assert "GOLD" in Colors
-assert Colors.GOLD.name == "GOLD"
-assert Colors.GOLD.value == 5
-assert Colors.GOLD == 5
 ```
 
 #### Example 10: Subclassing Over
