@@ -1,6 +1,7 @@
 import pytest
 import logging
 import types
+import colorsys
 
 import enumerific
 
@@ -17,6 +18,8 @@ from enumerific import (
     EnumerationList,
     EnumerationDictionary,
     EnumerationFlag,
+    EnumerationSubclassingError,
+    EnumerationExtensibilityError,
     auto,
     anno,
 )
@@ -662,6 +665,97 @@ def test_extensible_enum_subclassing():
     assert "PURPLE" in Colors
 
 
+def test_prevention_of_subclassing():
+    # To prevent an enumeration class from being extended through subclassing, the
+    # `subclassable` keyword argument can be set when creating the class; this will
+    # result in an `EnumerationSubclassingError` exception being raised on subclassing:
+    class Colors(Enumeration, subclassable=False):
+        RED = 1
+        GREEN = 2
+        BLUE = 3
+
+    with pytest.raises(EnumerationSubclassingError):
+
+        class MoreColors(Colors):
+            PURPLE = 4
+
+
+def test_prevention_of_extensibility():
+    # To prevent an enumeration class from being extended through subclassing, the
+    # `subclassable` keyword argument can be set when creating the class; this will
+    # result in an `EnumerationSubclassingError` exception being raised on subclassing:
+    class Colors(Enumeration, extensible=False):
+        RED = 1
+        GREEN = 2
+        BLUE = 3
+
+    with pytest.raises(EnumerationSubclassingError):
+
+        class MoreColors(Colors):
+            PURPLE = 4
+
+    with pytest.raises(EnumerationExtensibilityError):
+        Colors.register("PURPLE", 4)
+
+
+def test_enumeration_option_backfilling():
+    # By default when an Enumeration class is created, it does not allow the backfilling
+    # of enumeration options from any subclasses; options defined on any subclasses will
+    # only be available on that subclass, and will not affect the options offered by the
+    # superclass itself; this behavior can be modified by setting the `backfill` keyword
+    # argument to `True` when creating the enumeration class.
+
+    # This first case demonstrates default behavior, where backfilling is prevented:
+    class Colors(Enumeration):
+        RED = 1
+        GREEN = 2
+        BLUE = 3
+
+    # Create a subclass, adding options which are distinctly available on the subclass
+    # but which will not affect the options available directly from the superclass:
+    class MoreColors(Colors):
+        PURPLE = 4
+        GOLD = 5
+
+    assert "RED" in Colors
+    assert "GREEN" in Colors
+    assert "BLUE" in Colors
+    assert not "PURPLE" in Colors
+    assert not "GOLD" in Colors
+
+    assert "RED" in MoreColors
+    assert "GREEN" in MoreColors
+    assert "BLUE" in MoreColors
+    assert "PURPLE" in MoreColors
+    assert "GOLD" in MoreColors
+
+    # To override default behavior and to allow backfilling of options from subclasses,
+    # the `backfill` keyword argument can be set to `True` when creating the class. This
+    # effectively creates an alternative to extend an existing enumeration class through
+    # subclassing and the side-effect of backfilling rather than using the `.register()`
+    # method to add new options to an existing enumeration class:
+    class Colors(Enumeration, backfill=True):
+        RED = 1
+        GREEN = 2
+        BLUE = 3
+
+    class MoreColors(Colors):
+        PURPLE = 4
+        GOLD = 5
+
+    assert "RED" in Colors
+    assert "GREEN" in Colors
+    assert "BLUE" in Colors
+    assert "PURPLE" in Colors
+    assert "GOLD" in Colors
+
+    assert "RED" in MoreColors
+    assert "GREEN" in MoreColors
+    assert "BLUE" in MoreColors
+    assert "PURPLE" in MoreColors
+    assert "GOLD" in MoreColors
+
+
 def test_extensible_enum_subclassing_with_duplicate_value_exception():
     """Ensure that subclassing an extensible Enumeration class then reusing an existing
     enumeration option value raises an exception when neither the `unique=False` or
@@ -699,7 +793,7 @@ def test_extensible_enum_subclassing_with_duplicate_aliased_value():
     enumeration option value raises an exception when neither the `unique=False` or
     `aliased=True` constructor options are specified at enumeration class creation."""
 
-    class Colors(Enumeration, aliased=True):
+    class Colors(Enumeration, aliased=True, backfill=True):
         RED = 1
         ORANGE = 2
         YELLOW = 3
@@ -1484,3 +1578,150 @@ def test_membership_in_tuple():
     assert Colors.GREEN not in colors
     assert Colors.BLUE not in colors
     assert Colors.VIOLET not in colors
+
+
+def test_attribute_access():
+    """Test access to attributes (methods, properties, etc) on an Enumeration subclass"""
+
+    class Colors(Enumeration):
+        """Create a test Color enumeration based on the Enumeration class"""
+
+        RED = auto(RGB=(255, 0, 0))
+        ORANGE = auto(RGB=(255, 165, 0))
+        YELLOW = auto(RGB=(255, 255, 0))
+        GREEN = auto(RGB=(0, 255, 0))
+        BLUE = auto(RGB=(0, 0, 255))
+        VIOLET = auto(RGB=(255, 0, 255))
+
+        @property
+        def HLS(self) -> tuple[float, float, float]:
+            """Convert the RGB color code into its HLS equivalent."""
+
+            # Normalize the RGB values into a 0-255 range first
+            (h, l, s) = colorsys.rgb_to_hls(
+                self.RGB[0] / 255.0,
+                self.RGB[1] / 255.0,
+                self.RGB[2] / 255.0,
+            )
+
+            # Normalize the HLS values into their normal 0-360º, 0-100%, 0-100% ranges
+            return tuple([h * 360.0, l * 100.0, s * 100.0])
+
+        def isWarm(self):
+            """Roughly (just for test purposes) determine in the color is 'warm'"""
+
+            (hue, lightness, saturation) = self.HLS
+
+            return (
+                (0 <= hue < 115) and (0 < lightness <= 80) and (10 <= saturation <= 100)
+            )
+
+        def isCool(self):
+            """Roughly (just for test purposes) determine in the color is 'cool'"""
+
+            (hue, lightness, saturation) = self.HLS
+
+            return (
+                (115 <= hue <= 360) and (lightness <= 100) and (saturation <= 100)
+            ) or ((hue == 0) and (10 <= lightness <= 100) and (saturation == 0))
+
+    # Ensure that the Colors enumeration subclass is of the expected types
+    assert issubclass(Colors, Enumeration)
+    assert issubclass(Colors, EnumerationInteger)
+
+    # Ensure that the Colors enumeration subclass has the expected number of options
+    assert len(Colors) == 6
+
+    # Ensure that the Colors enumeration subclass has the expected options
+    assert Colors.RED in Colors
+    assert Colors.ORANGE in Colors
+    assert Colors.YELLOW in Colors
+    assert Colors.GREEN in Colors
+    assert Colors.BLUE in Colors
+    assert Colors.VIOLET in Colors
+
+    # Ensure that the Colors enumeration subclass as the expected isWarm method
+    assert hasattr(Colors, "isWarm")
+    assert Colors.RED.isWarm() is True
+    assert Colors.ORANGE.isWarm() is True
+    assert Colors.YELLOW.isWarm() is True
+    assert Colors.GREEN.isWarm() is False
+    assert Colors.BLUE.isWarm() is False
+    assert Colors.VIOLET.isWarm() is False
+
+    # Ensure that the Colors enumeration subclass as the expected isCool method
+    assert hasattr(Colors, "isCool")
+    assert Colors.RED.isCool() is False
+    assert Colors.ORANGE.isCool() is False
+    assert Colors.YELLOW.isCool() is False
+    assert Colors.GREEN.isCool() is True
+    assert Colors.BLUE.isCool() is True
+    assert Colors.VIOLET.isCool() is True
+
+    # Create an enumeration subclass of the Colors enumeration, inheriting its options
+    # and attributes, and adding a new GOLD option for testing:
+    class MoreColors(Colors):
+        GOLD = auto(RGB=(255, 215, 0))
+
+    # Ensure that the MoreColors enumeration subclass is of the expected type
+    assert issubclass(MoreColors, Enumeration)
+    assert issubclass(MoreColors, EnumerationInteger)
+
+    # Ensure that the MoreColors enumeration subclass has the expected number of options
+    assert len(MoreColors) == 7
+
+    # Ensure that the Colors enumeration superclass has the expected number of options
+    assert len(Colors) == 6
+
+    # Ensure that the MoreColors enumeration subclass has the expected options
+    assert MoreColors.RED in Colors
+    assert MoreColors.ORANGE in Colors
+    assert MoreColors.YELLOW in Colors
+    assert MoreColors.GREEN in Colors
+    assert MoreColors.BLUE in Colors
+    assert MoreColors.VIOLET in Colors
+    assert MoreColors.GOLD in MoreColors
+
+    # Ensure that the Colors enumeration superclass did not backfill the new GOLD option
+    # which was prevented by setting the backfill keyword argument when creating Colors:
+    assert MoreColors.GOLD not in Colors
+
+    # Ensure that the MoreColors enumeration subclass as the expected methods
+    assert hasattr(MoreColors, "isWarm")
+    assert hasattr(MoreColors, "isCool")
+
+    # Ensure that the MoreColors enumeration subclass methods return the expected values
+    assert MoreColors.GOLD.isWarm() is True
+    assert MoreColors.GOLD.isCool() is False
+
+    # Create an enumeration subclass of the Colors enumeration, inheriting its options
+    # and attributes, and adding a new SILVER option for testing; note when subclassing,
+    # the subclass can be given the same name as the class it inherits from, so in this
+    # scope it effectively replaces the superclass, at least by its direct name:
+    class Colors(MoreColors):
+        SILVER = auto(RGB=(192, 192, 192))
+
+    # Ensure that the Colors enumeration subclass is of the expected type
+    assert issubclass(Colors, Enumeration)
+    assert issubclass(Colors, EnumerationInteger)
+
+    # Ensure that the Colors enumeration subclass has the expected number of options
+    assert len(Colors) == 8
+
+    # Ensure that the Colors enumeration subclass has the expected options
+    assert Colors.RED in Colors
+    assert Colors.ORANGE in Colors
+    assert Colors.YELLOW in Colors
+    assert Colors.GREEN in Colors
+    assert Colors.BLUE in Colors
+    assert Colors.VIOLET in Colors
+    assert Colors.GOLD in Colors
+    assert Colors.SILVER in Colors
+
+    # Ensure that the Colors enumeration subclass as the expected methods
+    assert hasattr(Colors, "isWarm")
+    assert hasattr(Colors, "isCool")
+
+    # Ensure that the Colors enumeration subclass methods return the expected values
+    assert Colors.SILVER.isWarm() is False
+    assert Colors.SILVER.isCool() is True

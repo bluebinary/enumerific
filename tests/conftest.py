@@ -10,6 +10,9 @@ import pytest
 import enumerific
 
 
+# logging.getLogger("enumerific").setLevel(logging.DEBUG)
+
+
 @pytest.fixture
 def EnumSampleA() -> enumerific.Enum:
     """Create and return the sample, EnumSampleA, class for use in the unit tests"""

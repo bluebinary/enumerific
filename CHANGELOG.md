@@ -1,5 +1,11 @@
 # Enumerific Enumerations Library Change Log
 
+## [1.0.3] - 2025-06-28
+### Added
+- Support for accessing attributes (methods, properties, etc) of a subclassed enumeration.
+- Support for controlling whether enumeration options added to a subclass are backfilled on the superclass.
+- Support for controlling whether enumeration classes can be extended through subclassing and registration.
+
 ## [1.0.2] - 2025-06-22
 ### Added
 - Support for annotating an enumeration option with other properties in addition to its value.
