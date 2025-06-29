@@ -2,7 +2,14 @@ from enum import *
 
 from .logging import logger
 
-from .exceptions import EnumValueError
+from .exceptions import (
+    EnumValueError,
+    EnumerationError,
+    EnumerationOptionError,
+    EnumerationSubclassingError,
+    EnumerationExtensibilityError,
+    EnumerationNonUniqueError,
+)
 
 from .extensible import (
     Enumeration,

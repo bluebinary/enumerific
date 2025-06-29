@@ -9,6 +9,7 @@ from enumerific.exceptions import (
     EnumerationError,
     EnumerationOptionError,
     EnumerationSubclassingError,
+    EnumerationExtensibilityError,
     EnumerationNonUniqueError,
 )
 
@@ -201,6 +202,7 @@ class EnumerationConfiguration(object):
     _overwritable: bool = None
     _removable: bool = None
     _subclassable: bool = None
+    _extensible: bool = None
     _raises: bool = None
     _flags: bool = None
     _start: int = None
@@ -216,6 +218,7 @@ class EnumerationConfiguration(object):
         overwritable: bool = None,
         removable: bool = None,
         subclassable: bool = None,
+        extensible: bool = None,
         raises: bool = None,
         flags: bool = None,
         start: int = None,
@@ -229,6 +232,7 @@ class EnumerationConfiguration(object):
         self.overwritable = overwritable
         self.removable = removable
         self.subclassable = subclassable
+        self.extensible = extensible
         self.raises = raises
         self.flags = flags
         self.start = start
@@ -244,6 +248,7 @@ class EnumerationConfiguration(object):
             "overwritable",
             "removable",
             "subclassable",
+            "extensible",
             "raises",
             "flags",
             "start",
@@ -318,7 +323,7 @@ class EnumerationConfiguration(object):
     def backfill(self) -> bool | None:
         return self._backfill
 
-    @aliased.setter
+    @backfill.setter
     def backfill(self, backfill: bool | None):
         if backfill is None:
             pass
@@ -369,6 +374,20 @@ class EnumerationConfiguration(object):
                 "The 'subclassable' argument, if specified, must have a boolean value!"
             )
         self._subclassable = subclassable
+
+    @property
+    def extensible(self) -> bool | None:
+        return self._extensible
+
+    @extensible.setter
+    def extensible(self, extensible: bool | None):
+        if extensible is None:
+            pass
+        elif not isinstance(extensible, bool):
+            raise TypeError(
+                "The 'extensible' argument, if specified, must have a boolean value!"
+            )
+        self._extensible = extensible
 
     @property
     def raises(self) -> bool | None:
@@ -484,6 +503,7 @@ class EnumerationMetaClass(type):
         backfill: bool = None,
         overwritable: bool = None,
         subclassable: bool = None,
+        extensible: bool = None,
         removable: bool = None,
         raises: bool = None,
         flags: bool = None,
@@ -500,7 +520,7 @@ class EnumerationMetaClass(type):
         any other keyword arguments that are included in the class signature call."""
 
         logger.debug(
-            "[EnumerationMetaClass] %s.__prepare__(name: %s, bases: %s, unique: %s, aliased: %s, backfill: %s, overwritable: %s, subclassable: %s, removable: %s, raises: %s, flags: %s, start: %s, steps: %s, times: %s, typecast: %s, kwargs: %s)",
+            "[EnumerationMetaClass] %s.__prepare__(name: %s, bases: %s, unique: %s, aliased: %s, backfill: %s, overwritable: %s, subclassable: %s, extensible: %s, removable: %s, raises: %s, flags: %s, start: %s, steps: %s, times: %s, typecast: %s, kwargs: %s)",
             name,
             name,
             bases,
@@ -509,6 +529,7 @@ class EnumerationMetaClass(type):
             backfill,
             overwritable,
             subclassable,
+            extensible,
             removable,
             raises,
             flags,
@@ -601,9 +622,10 @@ class EnumerationMetaClass(type):
         *args,
         unique: bool = None,  # True
         aliased: bool = None,  # False
-        backfill: bool = None, # False
+        backfill: bool = None,  # False
         overwritable: bool = None,  # False
         subclassable: bool = None,  # True
+        extensible: bool = None,  # True
         removable: bool = None,  # False
         raises: bool = None,  # False
         flags: bool = None,  # False
@@ -653,6 +675,13 @@ class EnumerationMetaClass(type):
         elif not isinstance(subclassable, bool):
             raise TypeError(
                 "The 'subclassable' argument, if specified, must have a boolean value!"
+            )
+
+        if extensible is None:
+            pass
+        elif not isinstance(extensible, bool):
+            raise TypeError(
+                "The 'extensible' argument, if specified, must have a boolean value!"
             )
 
         if removable is None:
@@ -710,6 +739,7 @@ class EnumerationMetaClass(type):
             backfill=backfill,
             overwritable=overwritable,
             subclassable=subclassable,
+            extensible=extensible,
             removable=removable,
             raises=raises,
             flags=flags,
@@ -785,6 +815,9 @@ class EnumerationMetaClass(type):
                             " >>> subclassable => %s", base_configuration.subclassable
                         )
                         logger.debug(
+                            " >>> extensible   => %s", base_configuration.extensible
+                        )
+                        logger.debug(
                             " >>> removable    => %s", base_configuration.removable
                         )
                         logger.debug(
@@ -806,9 +839,12 @@ class EnumerationMetaClass(type):
                             " >>> typecast     => %s", base_configuration.typecast
                         )
 
-                        if base_configuration.subclassable is False:
+                        if (
+                            base_configuration.subclassable is False
+                            or base_configuration.extensible is False
+                        ):
                             raise EnumerationSubclassingError(
-                                "The '%s' enumeration class cannot be subclassed when the keyword argument 'subclassable=False' was passed to the class constructor!"
+                                "The '%s' enumeration class cannot be subclassed when the keyword arguments 'subclassable=False' or 'extensible=False` are passed to the class constructor!"
                                 % (base.__name__)
                             )
 
@@ -835,6 +871,10 @@ class EnumerationMetaClass(type):
                             configuration.subclassable,
                         )
                         logger.debug(
+                            " >>> (updated) extensible => %s",
+                            configuration.extensible,
+                        )
+                        logger.debug(
                             " >>> (updated) removable    => %s", configuration.removable
                         )
                         logger.debug(
@@ -859,7 +899,6 @@ class EnumerationMetaClass(type):
                     # logger.debug(" >>> found base (%s) that is an instance of EnumerationMetaClass and a subclass of Enumeration" % (base))
 
                     if not (base is Enumeration or Enumeration in base.__bases__):
-                        # enumerations = base._enumerations  # reference to the _enumerations dictionary
                         _enumerations = base._enumerations
 
                     logger.debug("  >>> enumerations => %s" % (base._enumerations))
@@ -884,6 +923,7 @@ class EnumerationMetaClass(type):
             backfill=False,
             overwritable=False,
             subclassable=True,
+            extensible=True,
             removable=False,
             raises=False,
             flags=False,
@@ -902,6 +942,7 @@ class EnumerationMetaClass(type):
         logger.debug(
             " >>> (after defaults) subclassable => %s", configuration.subclassable
         )
+        logger.debug(" >>> (after defaults) extensible => %s", configuration.extensible)
         logger.debug(
             " >>> (after defaults) removable    => %s", configuration.removable
         )
@@ -1035,20 +1076,10 @@ class EnumerationMetaClass(type):
 
         logger.debug(" >>> bases         => %s", [base for base in bases])
 
-        # if "EnumerationInteger" in globals():
-        #     if EnumerationInteger in bases and EnumerationFlag in bases:
-        #         bases = tuple([base for base in bases if not EnumerationInteger])
-
         args: tuple[object] = (name, bases, attributes)
 
         # Create the new enumeration class instance
         instance = super().__new__(cls, *args, **kwargs)
-
-        # logger.debug(
-        # " >>> metaclass => %s (base: %s, type: %s, bases: %s)\n"
-        # % (enumclass, instance, type(instance), instance.__bases__)
-        # )
-        # logger.debug(" >>> metaclass => %s (base: %s, type: %s, bases: %s)\n" % (enumclass, instance, type(instance), instance.__bases__))
 
         logger.debug(" >>> baseclass     => %s", baseclass)
         logger.debug(" >>> instance      => %s", instance)
@@ -1058,6 +1089,7 @@ class EnumerationMetaClass(type):
         logger.debug(" >>> backfill      => %s", configuration.backfill)
         logger.debug(" >>> overwritable  => %s", configuration.overwritable)
         logger.debug(" >>> subclassable  => %s", configuration.subclassable)
+        logger.debug(" >>> extensible    => %s", configuration.extensible)
         logger.debug(" >>> removable     => %s", configuration.removable)
         logger.debug(" >>> raises        => %s", configuration.raises)
         logger.debug(" >>> flags         => %s", configuration.flags)
@@ -1086,7 +1118,10 @@ class EnumerationMetaClass(type):
         )
 
         if isinstance(base_enumerations := attributes.get("base_enumerations"), dict):
-            if self._configuration.backfill is True:
+            if (
+                self._configuration.backfill is True
+                and self._configuration.extensible is True
+            ):
                 self._enumerations: dict[str, Enumeration] = base_enumerations
             else:
                 self._enumerations: dict[str, Enumeration] = {}
@@ -1372,6 +1407,12 @@ class EnumerationMetaClass(type):
             name,
             value,
         )
+
+        if self.configuration.extensible is False:
+            raise EnumerationExtensibilityError(
+                "The '%s' enumeration class has been configured to prevent extensibility, so cannot be extended with new options either through registration or subclassing, so the '%s' option cannot be registered!"
+                % (self.__name__, name)
+            )
 
         if self.configuration.overwritable is False and name in self._enumerations:
             raise EnumerationNonUniqueError(

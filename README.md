@@ -11,9 +11,9 @@ The Enumerific library's `Enumeration` class offers the following features:
  * Enumerific enumerations options can be added after an `Enumeration` class has been created either through extending an existing enumerations class by subclassing or by registering new options directly on an existing enumerations class via the `.register()` method; this is especially useful for cases where enumeration options may not all be known prior to runtime;
  * Enumerific enumerations options can be removed after an `Enumeration` class has been created via the `.unregister()` method; this specialised behaviour is prevented by default, but can be enabled for advanced use cases;
  * Enforcement of unique values for all options within an enumeration, unless overridden;
- * Support for aliasing enumeration options;
- * Support for redefining enumeration options;
+ * Support for aliasing enumeration options, and control over this behaviour;
  * Support for backfilling enumeration options on a superclass when subclassing, and control over this behaviour
+ * Support for redefining enumeration options, and control over this behaviour;
  * Support for automatically generating unique number sequences for enumeration options, including powers of two for bitwise enumeration flags, as well as other sequences such as powers of other numbers and factoring;
  * Support for annotating enumeration options with additional arbitrary key-value pairs, which can be particularly useful for associating additional data with a given enumeration option, which may be accessed later anywhere in code that the enumeration option is available;
  * Simple one-line reconciliation of `Enumeration` class options to the corresponding `enums.Enum` class instance that represents the corresponding option; reconciliation by enumeration option name, value and enumeration class instance reference are all supported through the `.reconcile()` class method;
@@ -224,7 +224,7 @@ for value in Colors.values():
     print(value)
 ```
 
-#### Example 8: Registering New Option
+#### Example 8: Registering New Options
 
 ```python
 from enumerific import Enumeration
@@ -235,11 +235,17 @@ class Colors(Enumeration):
     BLUE = 3
 
 Colors.register("PURPLE", 4)
+Colors.register("GOLD", 5)
 
 assert "PURPLE" in Colors
 assert Colors.PURPLE.name == "PURPLE"
 assert Colors.PURPLE.value == 4
 assert Colors.PURPLE == 4
+
+assert "GOLD" in Colors
+assert Colors.GOLD.name == "GOLD"
+assert Colors.GOLD.value == 5
+assert Colors.GOLD == 5
 ```
 
 #### Example 9: Subclassing
@@ -252,16 +258,34 @@ class Colors(Enumeration):
     GREEN = 2
     BLUE = 3
 
+# Ensure that Colors has the expected options
+assert "RED" in Colors
+assert "GREEN" in Colors
+assert "BLUE" in Colors
+
+# Create a subclass of Colors, inheriting its options
 class MoreColors(Colors):
     PURPLE = 4
     GOLD = 5
+
+# Ensure that MoreColors inherited the options from Colors, as well as adding its own
+assert "RED" in MoreColors
+assert "GREEN" in MoreColors
+assert "BLUE" in MoreColors
+assert "PURPLE" in MoreColors
+assert "GOLD" in MoreColors
+
+# As backfilling is off by default subclass options won't be available on the superclass
+assert not "PURPLE" in Colors
+assert not "GOLD" in Colors
+```
 
 #### Example 10: Subclassing with Backfilling
 
 ```python
 from enumerific import Enumeration
 
-# To override the default behavior and to allow backfilling of options from subclasses,
+# To override the default behaviour and to allow backfilling of options from subclasses,
 # the `backfill` keyword argument can be set to `True` when creating the class. This
 # effectively creates another way to extend an existing enumeration class through
 # subclassing and its side-effect of backfilling, compared to using the `.register()`
@@ -291,7 +315,7 @@ assert "PURPLE" in Colors
 assert "GOLD" in Colors
 ```
 
-#### Example 10: Subclassing Over
+#### Example 11: Subclassing Over
 
 ```python
 from enumerific import Enumeration
@@ -301,29 +325,34 @@ class Colors(Enumeration):
     GREEN = 2
     BLUE = 3
 
-# Subclassed Enumerations can have the same name as the parent class
-# The subclass will inherit the enumeration options of its parent
+assert "RED" in Colors
+assert Colors.RED == 1
+
+assert "GREEN" in Colors
+assert Colors.GREEN == 2
+
+assert "BLUE" in Colors
+assert Colors.BLUE == 3
+
+# Subclasses of Enumerations classes can be given the same name as the parent class, so
+# within this scope, the subclass shadows the superclass; the subclass inherits all the
+# enumeration options of its parent(s) superclasses:
 class Colors(Colors):
     PURPLE = 4
     GOLD = 5
 
+assert "RED" in Colors
+assert "GREEN" in Colors
 assert "BLUE" in Colors
-assert Colors.BLUE.name == "BLUE"
-assert Colors.BLUE.value == 3
-assert Colors.BLUE == 3
 
 assert "PURPLE" in Colors
-assert Colors.PURPLE.name == "PURPLE"
-assert Colors.PURPLE.value == 4
 assert Colors.PURPLE == 4
 
 assert "GOLD" in Colors
-assert Colors.GOLD.name == "GOLD"
-assert Colors.GOLD.value == 5
 assert Colors.GOLD == 5
 ```
 
-#### Example 11: Unregistering Existing Option
+#### Example 12: Unregistering Existing Option
 
 ```python
 from enumerific import Enumeration
@@ -342,7 +371,26 @@ assert "GREEN" not in Colors
 assert "BLUE" in Colors
 ```
 
-#### Example 12: Aliasing Options
+#### Example 13: Preventing Subclassing of Enumeration Classes
+
+```python
+from enumerific import Enumeration, EnumerationSubclassingError
+import pytest
+
+# To prevent an enumeration class from being extended through subclassing, the
+# `subclassable` keyword argument can be set when creating the class; this will
+# result in an `EnumerationSubclassingError` exception being raised on subclassing:
+class Colors(Enumeration, subclassable=False):
+    RED = 1
+    GREEN = 2
+    BLUE = 3
+
+with pytest.raises(EnumerationSubclassingError):
+    class MoreColors(Colors):
+        PURPLE = 4
+```
+
+#### Example 14: Aliasing Options
 
 ```python
 from enumerific import Enumeration
@@ -392,7 +440,7 @@ assert Colors.GREEN.aliases == [Colors.VERTE]
 assert Colors.BLUE.aliases == []  # BLUE has not been aliased
 ```
 
-#### Example 13: Non-Unique Options
+#### Example 15: Non-Unique Options
 
 ```python
 from enumerific import Enumeration
@@ -431,7 +479,7 @@ assert Colors.RED == Colors.GREEN
 assert Colors.BLUE != Colors.RED
 ```
 
-#### Example 14: Bit Wise Flags
+#### Example 16: Bit Wise Flags
 
 ```python
 from enumerific import Enumeration
@@ -503,7 +551,7 @@ assert Permissions.DELETE in permissions
 assert str(permissions) == "Permissions.READ|WRITE|DELETE"
 ```
 
-#### Example 15: Annotating Enumeration Option Values
+#### Example 17: Annotating Enumeration Option Values
 
 ```python
 from enumerific import Enumeration, anno
@@ -547,7 +595,7 @@ assert Colors.PURPLE.rgb == (255, 0, 255)
 assert Colors.PURPLE.primary is False
 ```
 
-#### Example 16: Annotating Enumeration Option Values with Automatic Sequencing
+#### Example 18: Annotating Enumeration Option Values with Automatic Sequencing
 
 ```python
 from enumerific import Enumeration, auto

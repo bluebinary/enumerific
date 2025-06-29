@@ -18,6 +18,8 @@ from enumerific import (
     EnumerationList,
     EnumerationDictionary,
     EnumerationFlag,
+    EnumerationSubclassingError,
+    EnumerationExtensibilityError,
     auto,
     anno,
 )
@@ -661,6 +663,39 @@ def test_extensible_enum_subclassing():
     assert "ORANGE" in Colors
     assert "YELLOW" in Colors
     assert "PURPLE" in Colors
+
+
+def test_prevention_of_subclassing():
+    # To prevent an enumeration class from being extended through subclassing, the
+    # `subclassable` keyword argument can be set when creating the class; this will
+    # result in an `EnumerationSubclassingError` exception being raised on subclassing:
+    class Colors(Enumeration, subclassable=False):
+        RED = 1
+        GREEN = 2
+        BLUE = 3
+
+    with pytest.raises(EnumerationSubclassingError):
+
+        class MoreColors(Colors):
+            PURPLE = 4
+
+
+def test_prevention_of_extensibility():
+    # To prevent an enumeration class from being extended through subclassing, the
+    # `subclassable` keyword argument can be set when creating the class; this will
+    # result in an `EnumerationSubclassingError` exception being raised on subclassing:
+    class Colors(Enumeration, extensible=False):
+        RED = 1
+        GREEN = 2
+        BLUE = 3
+
+    with pytest.raises(EnumerationSubclassingError):
+
+        class MoreColors(Colors):
+            PURPLE = 4
+
+    with pytest.raises(EnumerationExtensibilityError):
+        Colors.register("PURPLE", 4)
 
 
 def test_enumeration_option_backfilling():
@@ -1551,12 +1586,12 @@ def test_attribute_access():
     class Colors(Enumeration):
         """Create a test Color enumeration based on the Enumeration class"""
 
-        RED = auto(RGB=(255,0,0))
-        ORANGE = auto(RGB=(255,165,0))
-        YELLOW = auto(RGB=(255,255,0))
-        GREEN = auto(RGB=(0,255,0))
-        BLUE = auto(RGB=(0,0,255))
-        VIOLET = auto(RGB=(255,0,255))
+        RED = auto(RGB=(255, 0, 0))
+        ORANGE = auto(RGB=(255, 165, 0))
+        YELLOW = auto(RGB=(255, 255, 0))
+        GREEN = auto(RGB=(0, 255, 0))
+        BLUE = auto(RGB=(0, 0, 255))
+        VIOLET = auto(RGB=(255, 0, 255))
 
         @property
         def HLS(self) -> tuple[float, float, float]:
@@ -1587,9 +1622,8 @@ def test_attribute_access():
             (hue, lightness, saturation) = self.HLS
 
             return (
-                ((115 <= hue <= 360) and (lightness <= 100) and (saturation <= 100))
-                or ((hue == 0) and (10 <= lightness <= 100) and (saturation == 0))
-            )
+                (115 <= hue <= 360) and (lightness <= 100) and (saturation <= 100)
+            ) or ((hue == 0) and (10 <= lightness <= 100) and (saturation == 0))
 
     # Ensure that the Colors enumeration subclass is of the expected types
     assert issubclass(Colors, Enumeration)
@@ -1627,7 +1661,7 @@ def test_attribute_access():
     # Create an enumeration subclass of the Colors enumeration, inheriting its options
     # and attributes, and adding a new GOLD option for testing:
     class MoreColors(Colors):
-        GOLD = auto(RGB=(255,215,0))
+        GOLD = auto(RGB=(255, 215, 0))
 
     # Ensure that the MoreColors enumeration subclass is of the expected type
     assert issubclass(MoreColors, Enumeration)
@@ -1665,7 +1699,7 @@ def test_attribute_access():
     # the subclass can be given the same name as the class it inherits from, so in this
     # scope it effectively replaces the superclass, at least by its direct name:
     class Colors(MoreColors):
-        SILVER = auto(RGB=(192,192,192))
+        SILVER = auto(RGB=(192, 192, 192))
 
     # Ensure that the Colors enumeration subclass is of the expected type
     assert issubclass(Colors, Enumeration)

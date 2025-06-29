@@ -14,5 +14,9 @@ class EnumerationSubclassingError(EnumerationError):
     pass
 
 
+class EnumerationExtensibilityError(EnumerationError):
+    pass
+
+
 class EnumerationNonUniqueError(EnumerationError):
     pass
