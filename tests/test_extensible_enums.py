@@ -1,6 +1,7 @@
 import pytest
 import logging
 import types
+import colorsys
 
 import enumerific
 
@@ -1484,3 +1485,151 @@ def test_membership_in_tuple():
     assert Colors.GREEN not in colors
     assert Colors.BLUE not in colors
     assert Colors.VIOLET not in colors
+
+
+def test_attribute_access():
+    """Test access to attributes (methods, properties, etc) on an Enumeration subclass"""
+
+    class Colors(Enumeration):
+        """Create a test Color enumeration based on the Enumeration class"""
+
+        RED = auto(RGB=(255,0,0))
+        ORANGE = auto(RGB=(255,165,0))
+        YELLOW = auto(RGB=(255,255,0))
+        GREEN = auto(RGB=(0,255,0))
+        BLUE = auto(RGB=(0,0,255))
+        VIOLET = auto(RGB=(255,0,255))
+
+        @property
+        def HLS(self) -> tuple[float, float, float]:
+            """Convert the RGB color code into its HLS equivalent."""
+
+            # Normalize the RGB values into a 0-255 range first
+            (h, l, s) = colorsys.rgb_to_hls(
+                self.RGB[0] / 255.0,
+                self.RGB[1] / 255.0,
+                self.RGB[2] / 255.0,
+            )
+
+            # Normalize the HLS values into their normal 0-360º, 0-100%, 0-100% ranges
+            return tuple([h * 360.0, l * 100.0, s * 100.0])
+
+        def isWarm(self):
+            """Roughly (just for test purposes) determine in the color is 'warm'"""
+
+            (hue, lightness, saturation) = self.HLS
+
+            return (
+                (0 <= hue < 115) and (0 < lightness <= 80) and (10 <= saturation <= 100)
+            )
+
+        def isCool(self):
+            """Roughly (just for test purposes) determine in the color is 'cool'"""
+
+            (hue, lightness, saturation) = self.HLS
+
+            return (
+                ((115 <= hue <= 360) and (lightness <= 100) and (saturation <= 100))
+                or ((hue == 0) and (10 <= lightness <= 100) and (saturation == 0))
+            )
+
+    # Ensure that the Colors enumeration subclass is of the expected types
+    assert issubclass(Colors, Enumeration)
+    assert issubclass(Colors, EnumerationInteger)
+
+    # Ensure that the Colors enumeration subclass has the expected number of options
+    assert len(Colors) == 6
+
+    # Ensure that the Colors enumeration subclass has the expected options
+    assert Colors.RED in Colors
+    assert Colors.ORANGE in Colors
+    assert Colors.YELLOW in Colors
+    assert Colors.GREEN in Colors
+    assert Colors.BLUE in Colors
+    assert Colors.VIOLET in Colors
+
+    # Ensure that the Colors enumeration subclass as the expected isWarm method
+    assert hasattr(Colors, "isWarm")
+    assert Colors.RED.isWarm() is True
+    assert Colors.ORANGE.isWarm() is True
+    assert Colors.YELLOW.isWarm() is True
+    assert Colors.GREEN.isWarm() is False
+    assert Colors.BLUE.isWarm() is False
+    assert Colors.VIOLET.isWarm() is False
+
+    # Ensure that the Colors enumeration subclass as the expected isCool method
+    assert hasattr(Colors, "isCool")
+    assert Colors.RED.isCool() is False
+    assert Colors.ORANGE.isCool() is False
+    assert Colors.YELLOW.isCool() is False
+    assert Colors.GREEN.isCool() is True
+    assert Colors.BLUE.isCool() is True
+    assert Colors.VIOLET.isCool() is True
+
+    # Create an enumeration subclass of the Colors enumeration, inheriting its options
+    # and attributes, and adding a new GOLD option for testing:
+    class MoreColors(Colors):
+        GOLD = auto(RGB=(255,215,0))
+
+    # Ensure that the MoreColors enumeration subclass is of the expected type
+    assert issubclass(MoreColors, Enumeration)
+    assert issubclass(MoreColors, EnumerationInteger)
+
+    # Ensure that the MoreColors enumeration subclass has the expected number of options
+    assert len(MoreColors) == 7
+
+    # Ensure that the Colors enumeration superclass has the expected number of options
+    assert len(Colors) == 6
+
+    # Ensure that the MoreColors enumeration subclass has the expected options
+    assert MoreColors.RED in Colors
+    assert MoreColors.ORANGE in Colors
+    assert MoreColors.YELLOW in Colors
+    assert MoreColors.GREEN in Colors
+    assert MoreColors.BLUE in Colors
+    assert MoreColors.VIOLET in Colors
+    assert MoreColors.GOLD in MoreColors
+
+    # Ensure that the Colors enumeration superclass did not backfill the new GOLD option
+    # which was prevented by setting the backfill keyword argument when creating Colors:
+    assert MoreColors.GOLD not in Colors
+
+    # Ensure that the MoreColors enumeration subclass as the expected methods
+    assert hasattr(MoreColors, "isWarm")
+    assert hasattr(MoreColors, "isCool")
+
+    # Ensure that the MoreColors enumeration subclass methods return the expected values
+    assert MoreColors.GOLD.isWarm() is True
+    assert MoreColors.GOLD.isCool() is False
+
+    # Create an enumeration subclass of the Colors enumeration, inheriting its options
+    # and attributes, and adding a new SILVER option for testing; note when subclassing,
+    # the subclass can be given the same name as the class it inherits from, so in this
+    # scope it effectively replaces the superclass, at least by its direct name:
+    class Colors(MoreColors):
+        SILVER = auto(RGB=(192,192,192))
+
+    # Ensure that the Colors enumeration subclass is of the expected type
+    assert issubclass(Colors, Enumeration)
+    assert issubclass(Colors, EnumerationInteger)
+
+    # Ensure that the Colors enumeration subclass has the expected number of options
+    assert len(Colors) == 8
+
+    # Ensure that the Colors enumeration subclass has the expected options
+    assert Colors.RED in Colors
+    assert Colors.ORANGE in Colors
+    assert Colors.YELLOW in Colors
+    assert Colors.GREEN in Colors
+    assert Colors.BLUE in Colors
+    assert Colors.VIOLET in Colors
+    assert Colors.GOLD in Colors
+    assert Colors.SILVER in Colors
+
+    # Ensure that the Colors enumeration subclass as the expected methods
+    assert hasattr(Colors, "isWarm")
+    assert hasattr(Colors, "isCool")
+
+    # Ensure that the Colors enumeration subclass methods return the expected values
+    assert Colors.SILVER.isWarm() is False
+    assert Colors.SILVER.isCool() is True

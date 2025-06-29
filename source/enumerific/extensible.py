@@ -1131,16 +1131,19 @@ class EnumerationMetaClass(type):
             )
 
     def __dir__(self) -> list[str]:
-        members: list[str] = []
-
-        for name, enumeration in self._enumerations.items():
-            members.append(name)
+        members: set[str] = set()
 
         for member in object.__dir__(self):
             if member.startswith("_") or member in self._special:
-                members.append(member)
+                members.add(member)
 
-        return members
+        for name, enumeration in self._enumerations.items():
+            members.add(name)
+
+        for member in vars(self):
+            members.add(member)
+
+        return list(members)
 
     def __contains__(self, other: Enumeration | object) -> bool:
         logger.debug(
@@ -1430,6 +1433,14 @@ class EnumerationMetaClass(type):
                     )
                 )
 
+        # When an enumeration option is reconciled, it may be defined in another class
+        # but have been accessed through a subclass; in order for attribute lookups to
+        # work within the subclass, we need to provide the current lookup context to the
+        # reconciled enumeration option, so that any attribute access on this object can
+        # perform their lookup in the correct part of the class hierarchy
+        if isinstance(reconciled, Enumeration):
+            reconciled._context = self
+
         return reconciled
 
     def validate(self, value: Enumeration | object = None, name: str = None) -> bool:
@@ -1449,6 +1460,7 @@ class Enumeration(metaclass=EnumerationMetaClass):
     """The Enumeration class is the subclass of all enumerations and their subtypes."""
 
     _metaclass: EnumerationMetaClass = None
+    _context: EnumerationMetaClass = None
     _enumeration: Enumeration = None
     _enumerations: dict[str, Enumeration] = None
     _annotations: anno = None
@@ -1609,6 +1621,8 @@ class Enumeration(metaclass=EnumerationMetaClass):
             return self._enumerations[name]
         elif self._annotations and name in self._annotations:
             return self._annotations[name]
+        elif self._context and name in dir(self._context):
+            return object.__getattribute__(self._context, name)
         else:
             # EnumerationOptionError subclasses AttributeError so we adhere to convention
             raise EnumerationOptionError(
