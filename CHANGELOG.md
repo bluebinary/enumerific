@@ -1,5 +1,9 @@
 # Enumerific Enumerations Library Change Log
 
+## [1.0.4] - 2025-06-29
+### Added
+- Improved attribute access on reconciled enumeration options for class methods, instance methods and properties.
+
 ## [1.0.3] - 2025-06-28
 ### Added
 - Support for accessing attributes (methods, properties, etc) of a subclassed enumeration.
