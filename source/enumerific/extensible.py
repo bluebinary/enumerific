@@ -1707,7 +1707,18 @@ class Enumeration(metaclass=EnumerationMetaClass):
         elif self._annotations and name in self._annotations:
             return self._annotations[name]
         elif self._context and name in dir(self._context):
-            return object.__getattribute__(self._context, name)
+            # Handle class methods, instance methods and properties here; because we are
+            # performing some special handling for enumerations, we need to reintroduce
+            # the necessary context to the methods here via the descriptor protocol so
+            # the methods and properties work as expected:
+            if callable(attribute := object.__getattribute__(self._context, name)):
+                return attribute.__get__(self)
+            elif isinstance(attribute, property):
+                return attribute.__get__(self)
+            elif isinstance(attribute, classmethod):
+                return attribute.__get__(self)
+            else:
+                return attribute
         else:
             # EnumerationOptionError subclasses AttributeError so we adhere to convention
             raise EnumerationOptionError(

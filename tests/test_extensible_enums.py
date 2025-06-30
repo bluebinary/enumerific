@@ -1583,7 +1583,7 @@ def test_membership_in_tuple():
 def test_attribute_access():
     """Test access to attributes (methods, properties, etc) on an Enumeration subclass"""
 
-    class Colors(Enumeration):
+    class Colors(Enumeration, backfill=True):
         """Create a test Color enumeration based on the Enumeration class"""
 
         RED = auto(RGB=(255, 0, 0))
@@ -1661,7 +1661,7 @@ def test_attribute_access():
     # Create an enumeration subclass of the Colors enumeration, inheriting its options
     # and attributes, and adding a new GOLD option for testing:
     class MoreColors(Colors):
-        GOLD = auto(RGB=(255, 215, 0))
+        GOLD = auto(RGB=(255, 215, 0), metallic=True)
 
     # Ensure that the MoreColors enumeration subclass is of the expected type
     assert issubclass(MoreColors, Enumeration)
@@ -1670,8 +1670,10 @@ def test_attribute_access():
     # Ensure that the MoreColors enumeration subclass has the expected number of options
     assert len(MoreColors) == 7
 
-    # Ensure that the Colors enumeration superclass has the expected number of options
-    assert len(Colors) == 6
+    # Ensure that the Colors enumeration superclass has the expected number of options,
+    # which because we enabled backfilling, so that it gains any enumeration options
+    # added to any of its subclasses, should be 7 at this point:
+    assert len(Colors) == 7
 
     # Ensure that the MoreColors enumeration subclass has the expected options
     assert MoreColors.RED in Colors
@@ -1682,9 +1684,9 @@ def test_attribute_access():
     assert MoreColors.VIOLET in Colors
     assert MoreColors.GOLD in MoreColors
 
-    # Ensure that the Colors enumeration superclass did not backfill the new GOLD option
-    # which was prevented by setting the backfill keyword argument when creating Colors:
-    assert MoreColors.GOLD not in Colors
+    # Ensure that the Colors enumeration superclass backfilled the new GOLD option which
+    # was enabled by setting the backfill keyword argument to True when creating Colors:
+    assert MoreColors.GOLD in Colors
 
     # Ensure that the MoreColors enumeration subclass as the expected methods
     assert hasattr(MoreColors, "isWarm")
@@ -1694,12 +1696,35 @@ def test_attribute_access():
     assert MoreColors.GOLD.isWarm() is True
     assert MoreColors.GOLD.isCool() is False
 
+    # Keep a reference to the original instance of Colors for identity checking, etc.
+    OriginalColors = Colors
+
     # Create an enumeration subclass of the Colors enumeration, inheriting its options
     # and attributes, and adding a new SILVER option for testing; note when subclassing,
     # the subclass can be given the same name as the class it inherits from, so in this
     # scope it effectively replaces the superclass, at least by its direct name:
     class Colors(MoreColors):
-        SILVER = auto(RGB=(192, 192, 192))
+        SILVER = auto(RGB=(192, 192, 192), metallic=True)
+
+        def isMetallic(self) -> bool:
+            """Return `True` for metallic Colors options, and False otherwise; this is
+            determined by checking if the Colors option has a 'metallic' annotation on
+            its value, and if so, if 'metallic' has a value of `True`; note that we can
+            use the `.get(name, default)` method to check if an annotation exists and
+            to return an optional default or `None` if it does not. Accessing attributes
+            that do not exist results in an exception being raised, so for attributes
+            that are not consistently defined for all options on a given enumeration,
+            using the `.get()` method offers a safe way to attempt access or default."""
+            return self.get("metallic", default=False) is True
+
+        @property
+        def HEX(self) -> str:
+            """Return the hexademimal string representation of the RGB color value."""
+            return f"{self.RGB[0]:02X}{self.RGB[1]:02X}{self.RGB[2]:02X}"
+
+        @classmethod
+        def count(cls) -> int:
+            return len(cls)
 
     # Ensure that the Colors enumeration subclass is of the expected type
     assert issubclass(Colors, Enumeration)
@@ -1725,3 +1750,32 @@ def test_attribute_access():
     # Ensure that the Colors enumeration subclass methods return the expected values
     assert Colors.SILVER.isWarm() is False
     assert Colors.SILVER.isCool() is True
+
+    # Attempt to reconcile a Colors option, in this case via its name, "RED"
+    color: Colors = Colors.reconcile("RED")
+    assert isinstance(color, Enumeration)
+
+    # Assert that the reconciled option is the one we expected
+    assert color is Colors.RED
+    assert color.name == "RED"
+    assert color.value == 1
+    assert color == 1
+
+    # Note: As the second version of the "Colors" class defined above shadows the first,
+    # we cannot perform identity checking on options associated with the first version
+    # via the second class; they can only be performed if we have a reference to the
+    # original class object, because while these two "Colors" classes share the same
+    # name, they are distinct objects with different identities, and enumeration options
+    # are always created as instances of the class they are defined within or registered
+    # on; if giving a subclass of an enumeration class the same name, be aware that any
+    # identity checking must be performed against the object that the option is tied to:
+    assert isinstance(Colors.RED, OriginalColors)
+    assert isinstance(color, OriginalColors)
+
+    # Assert that attribute access to annotations, properties and methods works:
+    assert color.RGB == (255, 0, 0)  # RGB is an annotation added to the option's value
+    assert color.HLS == (0.0, 50.0, 100.0)  # HLS is a property on to the Colors class
+    assert color.isWarm() is True  # isWarm() is a method on the first Colors class
+    assert color.isMetallic() is False  # isMetallic() is defined on the Colors subclass
+    assert color.HEX == "FF0000"  # HEX is a property defined on the Colors subclass
+    assert color.count() == 8  # count() is a classmethod defined on the Colors subclass
