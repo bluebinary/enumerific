@@ -1195,7 +1195,7 @@ class EnumerationMetaClass(type):
 
         logger.debug("+" * 100)
 
-    def __getattr__(self, name) -> object:
+    def __getattr__(self, name: str) -> object:
         # logger.debug("%s.__getattr__(name: %s)", self.__class__.__name__, name)
 
         if name.startswith("_") or name in self._special:
@@ -1651,7 +1651,7 @@ class Enumeration(metaclass=EnumerationMetaClass):
             )
 
         if annotations is None:
-            pass
+            self._annotations = anno(value=self.value)
         elif isinstance(annotations, anno):
             self._annotations = annotations
         else:
@@ -1704,8 +1704,6 @@ class Enumeration(metaclass=EnumerationMetaClass):
             return object.__getattribute__(self, name)
         elif self._enumerations and name in self._enumerations:
             return self._enumerations[name]
-        elif self._annotations and name in self._annotations:
-            return self._annotations[name]
         elif self._context and name in dir(self._context):
             # Handle class methods, instance methods and properties here; because we are
             # performing some special handling for enumerations, we need to reintroduce
@@ -1719,6 +1717,8 @@ class Enumeration(metaclass=EnumerationMetaClass):
                 return attribute.__get__(self)
             else:
                 return attribute
+        elif self._annotations and name in self._annotations:
+            return self._annotations[name]
         else:
             # EnumerationOptionError subclasses AttributeError so we adhere to convention
             raise EnumerationOptionError(
@@ -1752,6 +1752,10 @@ class Enumeration(metaclass=EnumerationMetaClass):
     @property
     def value(self) -> object:
         return self._value
+
+    @property
+    def annotations(self) -> anno:
+        return self._annotations
 
     @property
     def aliased(self) -> bool:

@@ -1,5 +1,12 @@
 # Enumerific Enumerations Library Change Log
 
+## [1.0.5] - 2025-08-01
+### Added
+- Added default initialisation of the annotations (`anno`) class instance, including for
+enumeration options that were specified without the `anno` class, for consistency with
+enumeration options that were specified with the `anno` class.
+- Added access to an enumeration option's annotations (`anno`) class instance via the new `annotations` property.
+
 ## [1.0.4] - 2025-06-29
 ### Added
 - Improved attribute access on reconciled enumeration options for class methods, instance methods and properties.
