@@ -1,5 +1,10 @@
 # Enumerific Enumerations Library Change Log
 
+## [1.0.6] - 2025-08-25
+### Added
+- Added a `named` property to the `Enumeration` class to provide access to the enumeration
+option's name and any aliases associated with the enumeration option, as a list of strings.
+
 ## [1.0.5] - 2025-08-01
 ### Added
 - Added default initialisation of the annotations (`anno`) class instance, including for

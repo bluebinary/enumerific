@@ -438,6 +438,11 @@ assert Colors.BLUE.aliased is False
 assert Colors.RED.aliases == [Colors.ROUGE]
 assert Colors.GREEN.aliases == [Colors.VERTE]
 assert Colors.BLUE.aliases == []  # BLUE has not been aliased
+
+# The names including any aliases for an option can be obtained via the .named property
+assert Colors.RED.named == ["RED", "ROUGE"]
+assert Colors.GREEN.named == ["GREEN", "VERTE"]
+assert Colors.BLUE.named == ["BLUE"]
 ```
 
 #### Example 15: Non-Unique Options
