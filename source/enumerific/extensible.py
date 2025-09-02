@@ -1797,6 +1797,28 @@ class Enumeration(metaclass=EnumerationMetaClass):
 
         return aliases
 
+    @property
+    def named(self) -> list[str]:
+        logger.debug(
+            "%s.names() >>> id(%s) => %s (%s)",
+            self.__class__.__name__,
+            self,
+            id(self._enumerations),
+            type(self._enumerations),
+        )
+
+        names: list[Enumeration] = [self.name]
+
+        for name, enumeration in self._enumerations.items():
+            logger.debug(" >>> checking for alias: %s => %s", name, enumeration)
+
+            if isinstance(enumeration, Enumeration):
+                if self is enumeration and enumeration.name != name:
+                    if not name in names:
+                        names.append(name)
+
+        return names
+
 
 class EnumerationType(Enumeration, typecast=False):
     """The EnumerationType class represents the type of value held by an enumeration."""

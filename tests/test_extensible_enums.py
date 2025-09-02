@@ -380,24 +380,57 @@ def test_extensible_enumeration_integer_non_unique():
         BLUE = 3
         ROUGE = 1
 
-    assert (
-        len(Colors) == 4
-    )  # while there are only 3 distinct values, there are 4 options
+    # While there are only 3 distinct values, there are 4 options, due the alias for RED
+    assert len(Colors) == 4
 
-    assert Colors.RED is Colors.ROUGE  # as ROUGE is an alias of RED, identity matches
+    # Ensure that the keys, names, values, items and options methods return as expected
+    assert Colors.keys() == ["RED", "GREEN", "BLUE", "ROUGE"]
+    assert Colors.names() == ["RED", "GREEN", "BLUE", "ROUGE"]
+    assert Colors.values() == [1, 2, 3, 1]
+    assert Colors.items() == [("RED", 1), ("GREEN", 2), ("BLUE", 3), ("ROUGE", 1)]
+    assert Colors.options() == {"RED": 1, "GREEN": 2, "BLUE": 3, "ROUGE": 1}
 
+    # Ensure that the aliased option has the expected identity and equality
+    assert Colors.RED is Colors.ROUGE  # As ROUGE is an alias of RED, identity matches
+    assert Colors.RED == Colors.ROUGE  # As ROUGE is an alias of RED, equality matches
+
+    # Ensure that the property values of RED are as expected
     assert Colors.RED.name == "RED"
     assert Colors.RED.value == 1
+    assert Colors.RED.aliased is True
+    assert Colors.RED.aliases == [Colors.ROUGE]
+    assert Colors.RED.named == ["RED", "ROUGE"]
 
+    # Ensure that the property values of ROUGE are as expected (as an alias of RED)
     assert Colors.ROUGE.name == "RED"
     assert Colors.ROUGE.value == 1
+    assert Colors.ROUGE.aliased is True
+    assert Colors.ROUGE.aliases == [Colors.RED]
+    assert Colors.ROUGE.named == ["RED", "ROUGE"]
 
+    # Ensure that the property values of GREEN are as expected
+    assert Colors.GREEN.name == "GREEN"
+    assert Colors.GREEN.value == 2
+    assert Colors.GREEN.aliased is False
+    assert Colors.GREEN.aliases == []
+    assert Colors.GREEN.named == ["GREEN"]
+
+    # Ensure that the property values of BLUE are as expected
+    assert Colors.BLUE.name == "BLUE"
+    assert Colors.BLUE.value == 3
+    assert Colors.BLUE.aliased is False
+    assert Colors.BLUE.aliases == []
+    assert Colors.BLUE.named == ["BLUE"]
+
+    # We can find the aliases for the Colors enumeration by finding the options with
+    # names that do no match their associated enumeration option name:
     assert [
         name for name, option in Colors.__options__.items() if option.name != name
     ] == [
         "ROUGE"
     ]  # ROUGE is an alias, so its name does not match the option it maps to
 
+    # Ensure that the aliases map is as expected
     assert len(Colors.__aliases__) == 1
     assert Colors.__aliases__ == {"ROUGE": Colors.RED}
     assert list(Colors.__aliases__.items()) == [("ROUGE", Colors.RED)]
