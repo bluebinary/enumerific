@@ -1491,8 +1491,11 @@ class EnumerationMetaClass(type):
                         break
                 else:
                     raise EnumerationOptionError(
-                        "The enumeration option, %s, has no '%s' annotation, only: %s!" % (
-                            enumeration, annotation, enumeration._annotations.keys(),
+                        "The enumeration option, %s, has no '%s' annotation, only: %s!"
+                        % (
+                            enumeration,
+                            annotation,
+                            enumeration._annotations.keys(),
                         )
                     )
             elif isinstance(value, Enumeration):
