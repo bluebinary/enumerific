@@ -1,5 +1,9 @@
 # Enumerific Enumerations Library Change Log
 
+## [1.0.7] - 2025-09-06
+### Added
+- Added support for reconciling Enumeration options via an optional named attribute value.
+
 ## [1.0.6] - 2025-08-25
 ### Added
 - Added a `named` property to the `Enumeration` class to provide access to the enumeration
