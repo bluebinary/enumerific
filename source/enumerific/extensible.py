@@ -1458,6 +1458,7 @@ class EnumerationMetaClass(type):
         value: Enumeration | object = None,
         name: str = None,
         caselessly: bool = False,
+        annotation: str = None,
     ) -> Enumeration | None:
         """The 'reconcile' method can be used to reconcile Enumeration type, enumeration
         values, or enumeration names to their matching Enumeration type instances. If a
@@ -1480,7 +1481,21 @@ class EnumerationMetaClass(type):
         reconciled: Enumeration = None
 
         for attribute, enumeration in self._enumerations.items():
-            if isinstance(value, Enumeration):
+            if isinstance(annotation, str):
+                if annotation in enumeration._annotations:
+                    if enumeration._annotations[annotation] is value:
+                        reconciled = enumeration
+                        break
+                    elif enumeration._annotations[annotation] == value:
+                        reconciled = enumeration
+                        break
+                else:
+                    raise EnumerationOptionError(
+                        "The enumeration option, %s, has no '%s' annotation, only: %s!" % (
+                            enumeration, annotation, enumeration._annotations.keys(),
+                        )
+                    )
+            elif isinstance(value, Enumeration):
                 if enumeration is value:
                     reconciled = enumeration
                     break

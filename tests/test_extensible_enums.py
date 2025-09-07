@@ -1613,8 +1613,8 @@ def test_membership_in_tuple():
     assert Colors.VIOLET not in colors
 
 
-def test_attribute_access():
-    """Test access to attributes (methods, properties, etc) on an Enumeration subclass"""
+def test_annotation_access():
+    """Test access to annotations (methods, properties, etc) on an Enumeration subclass"""
 
     class Colors(Enumeration, backfill=True):
         """Create a test Color enumeration based on the Enumeration class"""
@@ -1812,3 +1812,32 @@ def test_attribute_access():
     assert color.isMetallic() is False  # isMetallic() is defined on the Colors subclass
     assert color.HEX == "FF0000"  # HEX is a property defined on the Colors subclass
     assert color.count() == 8  # count() is a classmethod defined on the Colors subclass
+
+
+def test_annotation_reconciliation():
+    """Test reconciliation of enumeration options via their annotations."""
+
+    class Colors(Enumeration):
+        """Create a test Color enumeration based on the Enumeration class"""
+
+        RED = auto(RGB=(255, 0, 0))
+        ORANGE = auto(RGB=(255, 165, 0))
+        YELLOW = auto(RGB=(255, 255, 0))
+        GREEN = auto(RGB=(0, 255, 0))
+        BLUE = auto(RGB=(0, 0, 255))
+        VIOLET = auto(RGB=(255, 0, 255))
+
+    # Ensure that the Colors enumeration subclass is of the expected types
+    assert issubclass(Colors, Enumeration)
+    assert issubclass(Colors, EnumerationInteger)
+
+    # Attempt to reconcile a Color against one of its annotations
+    color = Colors.reconcile(value=(255, 0, 0), annotation="RGB")
+
+    assert isinstance(color, Colors)
+    assert isinstance(color, Enumeration)
+    assert isinstance(color, EnumerationInteger)
+
+    assert color.name == "RED"
+    assert color.value == 1
+    assert color.RGB == (255, 0, 0)

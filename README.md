@@ -645,6 +645,32 @@ assert Colors.PURPLE.rgb == (255, 0, 255)
 assert Colors.PURPLE.primary is False
 ```
 
+#### Example 19: Reconciling Enumeration Options via Annotations
+
+```python
+from enumerific import Enumeration, auto
+
+class Colors(Enumeration):
+    """Create a test Color enumeration based on the Enumeration class"""
+
+    RED = auto(RGB=(255, 0, 0))
+    GREEN = auto(RGB=(0, 255, 0))
+    BLUE = auto(RGB=(0, 0, 255))
+
+# Ensure that the Colors enumeration subclass is of the expected types
+assert issubclass(Colors, Enumeration)
+
+# Attempt to reconcile a Color against one of its annotations
+color = Colors.reconcile(value=(255, 0, 0), annotation="RGB")
+
+assert isinstance(color, Colors)
+assert isinstance(color, Enumeration)
+
+assert color.name == "RED"
+assert color.value == 1
+assert color.RGB == (255, 0, 0)
+```
+
 # Enumerific Library Enumerations: Classes & Methods
 
 The Enumerific library's `Enumeration` class is a greenfield implementation of enumerations
