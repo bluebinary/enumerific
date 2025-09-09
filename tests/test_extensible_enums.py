@@ -1820,24 +1820,49 @@ def test_annotation_reconciliation():
     class Colors(Enumeration):
         """Create a test Color enumeration based on the Enumeration class"""
 
-        RED = auto(RGB=(255, 0, 0))
+        RED = auto(RGB=(255, 0, 0), primary=True)
         ORANGE = auto(RGB=(255, 165, 0))
-        YELLOW = auto(RGB=(255, 255, 0))
+        YELLOW = auto(RGB=(255, 255, 0), primary=True)
         GREEN = auto(RGB=(0, 255, 0))
-        BLUE = auto(RGB=(0, 0, 255))
+        BLUE = auto(RGB=(0, 0, 255), primary=True)
         VIOLET = auto(RGB=(255, 0, 255))
 
     # Ensure that the Colors enumeration subclass is of the expected types
     assert issubclass(Colors, Enumeration)
     assert issubclass(Colors, EnumerationInteger)
 
-    # Attempt to reconcile a Color against one of its annotations
-    color = Colors.reconcile(value=(255, 0, 0), annotation="RGB")
+    # Attempt to reconcile a Color against one of its annotations (via annotation keyword)
+    color = Colors.reconcile(RGB=(255, 0, 0))
 
     assert isinstance(color, Colors)
     assert isinstance(color, Enumeration)
-    assert isinstance(color, EnumerationInteger)
 
     assert color.name == "RED"
     assert color.value == 1
     assert color.RGB == (255, 0, 0)
+
+    # Attempt to reconcile a Color against two of its annotations (via annotation keywords)
+    color = Colors.reconcile(RGB=(255, 255, 0), primary=True)
+
+    assert isinstance(color, Colors)
+    assert isinstance(color, Enumeration)
+
+    assert color.name == "YELLOW"
+    assert color.value == 3
+    assert color.RGB == (255, 255, 0)
+
+    # Attempt to reconcile a Color against one of its annotations (via annotation argument)
+    color = Colors.reconcile(value=(0, 255, 0), annotation="RGB")
+
+    assert isinstance(color, Colors)
+    assert isinstance(color, Enumeration)
+
+    assert color.name == "GREEN"
+    assert color.value == 4
+    assert color.RGB == (0, 255, 0)
+
+    # Test reconciliation against a non-existent option
+    color = Colors.reconcile(RGB=(125, 125, 125))
+
+    # Ensure the return value is None when a matching enumeration option cannot be found
+    assert color is None

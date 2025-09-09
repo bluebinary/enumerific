@@ -1459,44 +1459,59 @@ class EnumerationMetaClass(type):
         name: str = None,
         caselessly: bool = False,
         annotation: str = None,
+        **annotations: dict[str, object],
     ) -> Enumeration | None:
         """The 'reconcile' method can be used to reconcile Enumeration type, enumeration
         values, or enumeration names to their matching Enumeration type instances. If a
         match is found the Enumeration type instance will be returned otherwise None will
         be returned, unless the class is configured to raise an error for mismatches."""
 
-        if name is None and value is None:
+        if isinstance(annotation, str):
+            annotations[annotation] = value
+
+        if name is None and value is None and len(annotations) == 0:
             raise ValueError(
-                "Either the 'value' or 'name' argument must be specified when calling the 'reconcile' function!"
+                "Either a 'value', 'name' or annotation keyword argument must be specified when calling the 'reconcile' function!"
             )
 
         if not value is None and not isinstance(value, (Enumeration, object)):
             raise TypeError(
-                "The 'value' argument must reference an Enumeration type or have an enumeration value!"
+                "The 'value' argument, if specified, must reference an Enumeration type or have an enumeration value!"
             )
 
         if not name is None and not isinstance(name, str):
-            raise TypeError("The 'name' argument must have a string value!")
+            raise TypeError(
+                "The 'name' argument, if specified, must have a string value!"
+            )
 
         reconciled: Enumeration = None
 
         for attribute, enumeration in self._enumerations.items():
-            if isinstance(annotation, str):
-                if annotation in enumeration._annotations:
-                    if enumeration._annotations[annotation] is value:
-                        reconciled = enumeration
-                        break
-                    elif enumeration._annotations[annotation] == value:
-                        reconciled = enumeration
-                        break
-                else:
-                    raise EnumerationOptionError(
-                        "The enumeration option, %s, has no '%s' annotation!"
-                        % (
-                            enumeration,
-                            annotation,
+            if len(annotations) > 0:
+                comparisons: list[bool] = []
+
+                for annotation, value in annotations.items():
+                    if annotation in enumeration._annotations:
+                        if enumeration._annotations[annotation] is value:
+                            comparisons.append(True)
+                        elif enumeration._annotations[annotation] == value:
+                            comparisons.append(True)
+                        else:
+                            comparisons.append(False)
+                    else:
+                        comparisons.append(False)
+
+                        logger.debug(
+                            "The enumeration option, %s, has no '%s' annotation!"
+                            % (
+                                enumeration,
+                                annotation,
+                            )
                         )
-                    )
+
+                if len(comparisons) == len(annotations) and False not in comparisons:
+                    reconciled = enumeration
+                    break
             elif isinstance(value, Enumeration):
                 if enumeration is value:
                     reconciled = enumeration

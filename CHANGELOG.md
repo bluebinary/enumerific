@@ -1,8 +1,12 @@
 # Enumerific Enumerations Library Change Log
 
+## [1.0.8] - 2025-09-08
+### Added
+- Added reconciliation of Enumeration options via annotation keyword arguments.
+
 ## [1.0.7] - 2025-09-06
 ### Added
-- Added support for reconciling Enumeration options via an optional named attribute value.
+- Added support for reconciling Enumeration options via an optional named annotation value.
 
 ## [1.0.6] - 2025-08-25
 ### Added
