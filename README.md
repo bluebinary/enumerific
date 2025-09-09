@@ -660,8 +660,8 @@ class Colors(Enumeration):
 # Ensure that the Colors enumeration subclass is of the expected types
 assert issubclass(Colors, Enumeration)
 
-# Attempt to reconcile a Color against one of its annotations
-color = Colors.reconcile(value=(255, 0, 0), annotation="RGB")
+# Attempt to reconcile a Color against one of its annotations (via annotation keyword)
+color = Colors.reconcile(RGB=(255, 0, 0))
 
 assert isinstance(color, Colors)
 assert isinstance(color, Enumeration)
@@ -669,6 +669,16 @@ assert isinstance(color, Enumeration)
 assert color.name == "RED"
 assert color.value == 1
 assert color.RGB == (255, 0, 0)
+
+# Attempt to reconcile a Color against one of its annotations (via annotation argument)
+color = Colors.reconcile(value=(0, 255, 0), annotation="RGB")
+
+assert isinstance(color, Colors)
+assert isinstance(color, Enumeration)
+
+assert color.name == "GREEN"
+assert color.value == 2
+assert color.RGB == (0, 255, 0)
 ```
 
 # Enumerific Library Enumerations: Classes & Methods
