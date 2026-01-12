@@ -1,5 +1,9 @@
 # Enumerific Enumerations Library Change Log
 
+## [1.0.9] - 2026-01-12
+### Added
+- Added default value for registering new extensible enumeration options.
+
 ## [1.0.8] - 2025-09-08
 ### Added
 - Added reconciliation of Enumeration options via annotation keyword arguments.

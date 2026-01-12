@@ -90,6 +90,7 @@ class auto(int, anno):
 
     start: int = 0
     steps: int = 1
+    times: int = 0
     power: int = 0
     value: int = 0
 
@@ -1378,7 +1379,7 @@ class EnumerationMetaClass(type):
 
         return self._instance.__name__
 
-    def register(self, name: str, value: object) -> Enumeration:
+    def register(self, name: str, value: object = auto()) -> Enumeration:
         """The 'register' method supports registering additional enumeration options for
         an existing enumeration class. The method accepts the name of the enumeration
         option and its corresponding value; these are then mapped into a new enumeration
