@@ -9,7 +9,6 @@ sys.path.insert(0, path)  # add enumerific library path for importing into the t
 import pytest
 import enumerific
 
-
 # logging.getLogger("enumerific").setLevel(logging.DEBUG)
 
 

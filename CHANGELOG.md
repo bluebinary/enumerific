@@ -1,5 +1,9 @@
 # Enumerific Enumerations Library Change Log
 
+## [1.1.0] - 2026-02-03
+### Added
+- Added support for optionally obtaining enumeration names as uppercase or lowercase.
+
 ## [1.0.9] - 2026-01-12
 ### Added
 - Added default value for registering new extensible enumeration options.

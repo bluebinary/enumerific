@@ -15,7 +15,6 @@ from enumerific.exceptions import (
 
 from types import MappingProxyType
 
-
 logger = logger.getChild(__name__)
 
 
@@ -750,7 +749,7 @@ class EnumerationMetaClass(type):
             typecast=typecast,
         )
 
-        (name, bases, attributes) = args  # Unpack the arguments passed to the metaclass
+        name, bases, attributes = args  # Unpack the arguments passed to the metaclass
 
         logger.debug(" >>> name          => %s", name)
         logger.debug(" >>> bases         => %s", [base for base in bases])
@@ -1107,7 +1106,7 @@ class EnumerationMetaClass(type):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        (name, bases, attributes) = args
+        name, bases, attributes = args
 
         logger.debug(
             "[EnumerationMetaClass] %s.__init__(args: %s, kwargs: %s) => name => %s => bases => %s",
@@ -1341,12 +1340,25 @@ class EnumerationMetaClass(type):
 
         return types.pop() if len(types) == 1 else EnumerationType.MIXED
 
-    def names(self) -> list[str]:
+    def names(self, uppercase: bool = False, lowercase: bool = False) -> list[str]:
         """The 'names' method returns a list of the enumeration option names."""
 
         logger.debug("%s(%s).names()", self.__class__.__name__, type(self))
 
-        return [name for name in self._enumerations]
+        if not isinstance(uppercase, bool):
+            raise TypeError("The 'uppercase' argument must have a boolean value!")
+
+        if not isinstance(lowercase, bool):
+            raise TypeError("The 'lowercase' argument must have a boolean value!")
+
+        names: list[str] = [name for name in self._enumerations]
+
+        if uppercase is True:
+            names = [name.upper() for name in names]
+        elif lowercase is True:
+            names = [name.lower() for name in names]
+
+        return names
 
     def keys(self) -> list[str]:
         """The 'keys' method is an alias of 'names' method; the both return the same."""

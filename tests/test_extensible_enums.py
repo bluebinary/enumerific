@@ -24,7 +24,6 @@ from enumerific import (
     anno,
 )
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -1631,7 +1630,7 @@ def test_annotation_access():
             """Convert the RGB color code into its HLS equivalent."""
 
             # Normalize the RGB values into a 0-255 range first
-            (h, l, s) = colorsys.rgb_to_hls(
+            h, l, s = colorsys.rgb_to_hls(
                 self.RGB[0] / 255.0,
                 self.RGB[1] / 255.0,
                 self.RGB[2] / 255.0,
@@ -1643,7 +1642,7 @@ def test_annotation_access():
         def isWarm(self):
             """Roughly (just for test purposes) determine in the color is 'warm'"""
 
-            (hue, lightness, saturation) = self.HLS
+            hue, lightness, saturation = self.HLS
 
             return (
                 (0 <= hue < 115) and (0 < lightness <= 80) and (10 <= saturation <= 100)
@@ -1652,7 +1651,7 @@ def test_annotation_access():
         def isCool(self):
             """Roughly (just for test purposes) determine in the color is 'cool'"""
 
-            (hue, lightness, saturation) = self.HLS
+            hue, lightness, saturation = self.HLS
 
             return (
                 (115 <= hue <= 360) and (lightness <= 100) and (saturation <= 100)
