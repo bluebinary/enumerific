@@ -6,7 +6,6 @@ from enumerific.logging import logger
 
 from enumerific.exceptions import EnumValueError
 
-
 logger = logger.getChild(__name__)
 
 

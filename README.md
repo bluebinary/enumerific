@@ -19,7 +19,7 @@ The Enumerific library's `Enumeration` class offers the following features:
  * Simple one-line reconciliation of `Enumeration` class options to the corresponding `enums.Enum` class instance that represents the corresponding option; reconciliation by enumeration option name, value and enumeration class instance reference are all supported through the `.reconcile()` class method;
  * Simple one-line validation of `Enumeration` class options; validation by enumeration option name, value and enumeration class instance reference are all supported through the `.validate()` class method;
  * Simple access to all of the options provided by an `Enumeration` class instance through the `.options()` class method;
- * Access to all of the names of the `Enumeration` class options via the `.names()` method;
+ * Access to all of the names of the `Enumeration` class options via the `.names()` method, which also takes the optional `uppercase` (`bool`) or `lowercase` (`bool`) keyword arguments which can be used to optionally obtain the names in their uppercase or lowercase forms respectively;
  * Access to all of the names/keys of the `Enumeration` class options via the `.keys()` method;
  * Access to all of the values of the `Enumeration` class options via the `.values()` method;
  * Access to all of the key-value pairs of the `Enumeration` class options via the `.items()` method;
